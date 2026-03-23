@@ -1,23 +1,31 @@
+
 "use client";
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Leaf, ShoppingCart, User, Menu, LayoutDashboard } from 'lucide-react';
+import { Leaf, ShoppingCart, User, Menu, LayoutDashboard, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useUser, useFirebase } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
+  const { auth } = useFirebase();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Mock auth state
-  const isLoggedIn = false; 
 
   const navLinks = [
     { name: 'Marketplace', href: '/marketplace', icon: ShoppingCart },
     { name: 'Impact', href: '/impact', icon: Leaf },
   ];
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/');
+  };
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -48,7 +56,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex md:items-center md:space-x-4">
-            {isLoggedIn ? (
+            {!isUserLoading && user ? (
               <>
                 <Button variant="ghost" asChild>
                   <Link href="/dashboard" className="flex items-center gap-2">
@@ -56,11 +64,14 @@ export default function Navbar() {
                     Dashboard
                   </Link>
                 </Button>
-                <Button size="icon" variant="ghost" className="rounded-full">
-                  <User className="h-5 w-5" />
+                <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+                  <LogOut className="h-5 w-5" />
                 </Button>
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                  {user.email?.[0].toUpperCase()}
+                </div>
               </>
-            ) : (
+            ) : !isUserLoading && (
               <>
                 <Button variant="ghost" asChild>
                   <Link href="/login">Login</Link>
@@ -69,6 +80,9 @@ export default function Navbar() {
                   <Link href="/signup">Join AgriLoop</Link>
                 </Button>
               </>
+            )}
+            {isUserLoading && (
+              <div className="h-8 w-24 animate-pulse rounded-md bg-muted" />
             )}
           </div>
 
@@ -95,12 +109,23 @@ export default function Navbar() {
               </Link>
             ))}
             <hr />
-            <Button asChild className="w-full">
-              <Link href="/signup">Join AgriLoop</Link>
-            </Button>
-            <Button variant="outline" asChild className="w-full">
-              <Link href="/login">Login</Link>
-            </Button>
+            {user ? (
+              <>
+                <Button asChild className="w-full" variant="ghost">
+                  <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
+                </Button>
+                <Button onClick={handleLogout} className="w-full" variant="outline">Logout</Button>
+              </>
+            ) : (
+              <>
+                <Button asChild className="w-full">
+                  <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)}>Join AgriLoop</Link>
+                </Button>
+                <Button variant="outline" asChild className="w-full">
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Login</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
