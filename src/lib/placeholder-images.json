@@ -1,3 +1,28 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "cassava_peels",
+      "description": "Cassava Peels Heap",
+      "imageUrl": "https://picsum.photos/seed/cassava/800/600",
+      "imageHint": "cassava peels"
+    },
+    {
+      "id": "rice_husk",
+      "description": "Rice Husk Storage",
+      "imageUrl": "https://picsum.photos/seed/rice/800/600",
+      "imageHint": "rice husk"
+    },
+    {
+      "id": "maize_stalks",
+      "description": "Dried Maize Stalks",
+      "imageUrl": "https://picsum.photos/seed/maize/800/600",
+      "imageHint": "maize stalks"
+    },
+    {
+      "id": "palm_kernel",
+      "description": "Palm Kernel Shells",
+      "imageUrl": "https://picsum.photos/seed/palm/800/600",
+      "imageHint": "palm kernel"
+    }
+  ]
 }
