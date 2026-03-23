@@ -95,7 +95,7 @@ export default function CreateListingPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Waste Type</title>
+                    <Label>Waste Type</Label>
                     <Select onValueChange={(v) => setFormData(p => ({ ...p, wasteType: v }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
