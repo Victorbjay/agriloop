@@ -139,7 +139,7 @@ export default function Home() {
               <p className="mb-10 text-xl opacity-90">Join thousands of farmers and companies building a sustainable future.</p>
               <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">Get Started Now</Button>
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">Talk to Sales</Button>
+                <Button size="lg" variant="outline" className="border-white text-white bg-transparent hover:bg-white/10">Talk to Sales</Button>
               </div>
             </div>
             {/* Abstract decorative circles */}
