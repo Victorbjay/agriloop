@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WASTE_TYPES, WASTE_CONDITIONS, QUALITY_GRADES } from '@/lib/constants';
-import { Sparkles, Loader2, MapPin, DollarSign, Package } from 'lucide-react';
+import { Sparkles, Loader2, MapPin, DollarSign, Package, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { generateListingDescription } from '@/ai/flows/ai-listing-description-generator';
 import { aiWasteValorizationSuggestion } from '@/ai/flows/ai-waste-valorization-suggestion';
