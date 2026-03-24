@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -13,10 +14,19 @@ import { useState } from 'react';
 import { generateListingDescription } from '@/ai/flows/ai-listing-description-generator';
 import { aiWasteValorizationSuggestion } from '@/ai/flows/ai-waste-valorization-suggestion';
 import { useToast } from '@/hooks/use-toast';
+import { useFirebase, useUser } from '@/firebase';
+import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export default function CreateListingPage() {
   const { toast } = useToast();
+  const { firestore } = useFirebase();
+  const { user } = useUser();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  
   const [formData, setFormData] = useState({
     wasteType: '' as any,
     condition: 'dried' as any,
@@ -24,7 +34,8 @@ export default function CreateListingPage() {
     qualityGrade: 'standard' as any,
     locationAddress: '',
     description: '',
-    pricePerKg: 0
+    pricePerKg: 0,
+    moqKg: 100
   });
 
   const [suggestions, setSuggestions] = useState<any>(null);
@@ -42,6 +53,7 @@ export default function CreateListingPage() {
         quantityKg: Number(formData.quantityKg)
       });
       setFormData(prev => ({ ...prev, description: result.description }));
+      toast({ title: "AI Generated", description: "Listing description is ready." });
     } catch (error) {
       toast({ variant: "destructive", title: "AI Error", description: "Could not generate description." });
     } finally {
@@ -72,6 +84,53 @@ export default function CreateListingPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePublish = async () => {
+    if (!user) {
+      toast({ variant: "destructive", title: "Unauthorized", description: "Please log in to publish a listing." });
+      return;
+    }
+
+    if (!formData.wasteType || !formData.pricePerKg || !formData.locationAddress) {
+      toast({ variant: "destructive", title: "Missing Fields", description: "Please fill in all required fields." });
+      return;
+    }
+
+    setPublishing(true);
+    const listingsRef = collection(firestore, 'listings');
+    const newListingId = doc(listingsRef).id;
+    
+    const typeLabel = WASTE_TYPES.find(t => t.value === formData.wasteType)?.label || '';
+    
+    const listingData = {
+      id: newListingId,
+      sellerId: user.uid,
+      sellerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Seller',
+      sellerBadge: 'none', // Initial status
+      wasteType: formData.wasteType,
+      wasteTypeLabel: typeLabel,
+      condition: formData.condition,
+      quantityKg: Number(formData.quantityKg),
+      pricePerKg: Number(formData.pricePerKg),
+      totalPrice: Number(formData.pricePerKg) * Number(formData.quantityKg),
+      moqKg: Number(formData.moqKg),
+      qualityGrade: formData.qualityGrade,
+      availableFrom: new Date().toISOString(),
+      locationAddress: formData.locationAddress,
+      locationLatitude: 6.5244, // Mock coordinates
+      locationLongitude: 3.3792,
+      locationGeohash: 's1', // Mock geohash
+      description: formData.description,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    addDocumentNonBlocking(listingsRef, listingData);
+    
+    toast({ title: "Success!", description: "Your listing has been published to the marketplace." });
+    router.push('/dashboard');
   };
 
   return (
@@ -218,8 +277,15 @@ export default function CreateListingPage() {
             </Card>
 
             <div className="flex justify-end gap-4">
-               <Button variant="outline">Save Draft</Button>
-               <Button className="px-10">Publish Listing</Button>
+               <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
+               <Button 
+                className="px-10" 
+                onClick={handlePublish}
+                disabled={publishing}
+               >
+                 {publishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                 Publish Listing
+               </Button>
             </div>
           </div>
 

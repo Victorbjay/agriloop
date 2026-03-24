@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -12,13 +13,60 @@ import {
   CheckCircle2, 
   ShieldCheck,
   Package,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
+import { Listing, Order } from '@/types';
+import Image from 'next/image';
 
 export default function DashboardPage() {
-  const [role] = useState<'seller' | 'buyer'>('seller'); // Simulate role
+  const { user, isUserLoading } = useUser();
+  const { firestore } = useFirebase();
+
+  // Fetch user's listings
+  const userListingsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'listings'),
+      where('sellerId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+  }, [firestore, user]);
+
+  const { data: listings, isLoading: listingsLoading } = useCollection<Listing>(userListingsQuery);
+
+  // Fetch user's orders (as buyer or seller)
+  const userOrdersQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'orders'),
+      where('sellerId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+  }, [firestore, user]);
+
+  const { data: orders, isLoading: ordersLoading } = useCollection<Order>(userOrdersQuery);
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-4">
+        <h1 className="text-2xl font-bold">Please log in to view your dashboard.</h1>
+        <Button asChild><Link href="/login">Go to Login</Link></Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,8 +75,8 @@ export default function DashboardPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-black text-foreground">Welcome back, Agro-Partner</h1>
-            <p className="text-muted-foreground">Your account is currently <span className="font-bold text-primary">Verified</span>.</p>
+            <h1 className="text-3xl font-black text-foreground">Welcome back, {user.displayName || 'Agro-Partner'}</h1>
+            <p className="text-muted-foreground">Your account is currently <span className="font-bold text-primary">Active</span>.</p>
           </div>
           <div className="flex gap-2">
             <Button className="flex items-center gap-2" asChild>
@@ -44,90 +92,101 @@ export default function DashboardPage() {
         <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">Earnings</CardTitle>
               <TrendingUp className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₦450,230</div>
-              <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+              <div className="text-2xl font-bold">₦0</div>
+              <p className="text-xs text-muted-foreground">Start selling to see revenue</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
-              <Clock className="h-4 w-4 text-accent" />
+              <CardTitle className="text-sm font-medium">Total Listings</CardTitle>
+              <Package className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">4 awaiting pickup</p>
+              <div className="text-2xl font-bold">{listings?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">Live on marketplace</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Waste Diverted</CardTitle>
-              <Package className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm font-medium">Orders</CardTitle>
+              <Clock className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">4.2 Tons</div>
-              <p className="text-xs text-muted-foreground">Approx. 120kg CO2 saved</p>
+              <div className="text-2xl font-bold">{orders?.length || 0}</div>
+              <p className="text-xs text-muted-foreground">Recent transactions</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Trust Score</CardTitle>
+              <CardTitle className="text-sm font-medium">Verification</CardTitle>
               <ShieldCheck className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">98/100</div>
-              <p className="text-xs text-muted-foreground">Top 5% of sellers</p>
+              <div className="text-2xl font-bold">Pending</div>
+              <p className="text-xs text-muted-foreground">Complete your profile</p>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="listings" className="w-full">
           <TabsList className="mb-8 bg-muted/50">
-            <TabsTrigger value="listings" className="px-8">Active Listings</TabsTrigger>
+            <TabsTrigger value="listings" className="px-8">My Listings</TabsTrigger>
             <TabsTrigger value="orders" className="px-8">Recent Orders</TabsTrigger>
             <TabsTrigger value="verification" className="px-8">Verification</TabsTrigger>
           </TabsList>
           
           <TabsContent value="listings">
              <div className="grid gap-6">
-                {[1, 2].map((i) => (
-                  <Card key={i} className="flex flex-col overflow-hidden border-none shadow-sm md:flex-row">
-                    <div className="relative h-48 w-full md:w-64">
-                       <Image 
-                        src={`https://picsum.photos/seed/list-${i}/300/200`} 
-                        alt="Listing" 
-                        fill 
-                        className="object-cover"
-                        data-ai-hint="waste"
-                       />
-                    </div>
-                    <div className="flex flex-1 flex-col p-6">
-                       <div className="mb-4 flex items-center justify-between">
-                          <div>
-                            <h3 className="text-xl font-bold">Cassava Peels (Dried)</h3>
-                            <p className="text-sm text-muted-foreground">ID: #LIST-2401-00{i}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-black text-primary">₦45/kg</p>
-                            <p className="text-xs text-muted-foreground">2,500kg available</p>
-                          </div>
-                       </div>
-                       <div className="mt-auto flex gap-2">
-                          <Button size="sm" variant="outline">Edit</Button>
-                          <Button size="sm" variant="outline">Pause</Button>
-                          <Button size="sm" className="bg-accent text-accent-foreground">View Insights</Button>
-                       </div>
-                    </div>
-                  </Card>
-                ))}
+                {listingsLoading ? (
+                  <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
+                ) : listings && listings.length > 0 ? (
+                  listings.map((item) => (
+                    <Card key={item.id} className="flex flex-col overflow-hidden border-none shadow-sm md:flex-row">
+                      <div className="relative h-48 w-full md:w-64">
+                         <Image 
+                          src={item.images?.[0] || `https://picsum.photos/seed/${item.id}/300/200`} 
+                          alt="Listing" 
+                          fill 
+                          className="object-cover"
+                          data-ai-hint="waste"
+                         />
+                      </div>
+                      <div className="flex flex-1 flex-col p-6">
+                         <div className="mb-4 flex items-center justify-between">
+                            <div>
+                              <h3 className="text-xl font-bold">{item.wasteTypeLabel} ({item.condition})</h3>
+                              <p className="text-sm text-muted-foreground">ID: {item.id}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-black text-primary">₦{item.pricePerKg}/kg</p>
+                              <p className="text-xs text-muted-foreground">{item.quantityKg}kg available</p>
+                            </div>
+                         </div>
+                         <div className="mt-auto flex gap-2">
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`/marketplace/${item.id}`}>View</Link>
+                            </Button>
+                            <Button size="sm" variant="outline">Edit</Button>
+                            <Button size="sm" className="bg-accent text-accent-foreground">Deactivate</Button>
+                         </div>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="rounded-3xl bg-muted/30 py-16 text-center">
+                    <p className="text-lg font-bold">You haven't posted any listings yet.</p>
+                    <Button className="mt-4" asChild><Link href="/listing/create">Create Your First Listing</Link></Button>
+                  </div>
+                )}
              </div>
           </TabsContent>
 
           <TabsContent value="orders">
-             <div className="rounded-xl bg-white p-4 shadow-sm">
+             <div className="rounded-xl bg-white p-4 shadow-sm overflow-hidden">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b text-left text-sm font-bold text-muted-foreground">
@@ -139,23 +198,33 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[1, 2, 3].map((i) => (
-                      <tr key={i} className="border-b last:border-0 hover:bg-muted/10 transition-colors">
-                        <td className="py-6 pl-4 font-medium">#ORD-00{i}A</td>
-                        <td className="py-6">BioEnergy Ltd</td>
-                        <td className="py-6">1,200 kg</td>
-                        <td className="py-6">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
-                            Awaiting Pickup
-                          </span>
-                        </td>
-                        <td className="py-6 pr-4 text-right">
-                          <Button size="sm" variant="ghost" className="text-primary font-bold">
-                            View <ArrowRight className="ml-1 h-3 w-3" />
-                          </Button>
+                    {ordersLoading ? (
+                      <tr><td colSpan={5} className="py-8 text-center"><Loader2 className="mx-auto animate-spin" /></td></tr>
+                    ) : orders && orders.length > 0 ? (
+                      orders.map((order) => (
+                        <tr key={order.id} className="border-b last:border-0 hover:bg-muted/10 transition-colors">
+                          <td className="py-6 pl-4 font-medium">{order.id}</td>
+                          <td className="py-6">{order.buyerName}</td>
+                          <td className="py-6">{order.quantityKg} kg</td>
+                          <td className="py-6">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
+                              {order.status}
+                            </span>
+                          </td>
+                          <td className="py-6 pr-4 text-right">
+                            <Button size="sm" variant="ghost" className="text-primary font-bold">
+                              View <ArrowRight className="ml-1 h-3 w-3" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                          No recent orders found.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
              </div>
@@ -165,45 +234,20 @@ export default function DashboardPage() {
             <Card className="border-none shadow-sm">
               <CardContent className="p-8">
                  <div className="flex flex-col items-center text-center space-y-6">
-                    <div className="rounded-full bg-primary/10 p-6">
-                      <ShieldCheck className="h-16 w-16 text-primary" />
+                    <div className="rounded-full bg-muted p-6">
+                      <ShieldCheck className="h-16 w-16 text-muted-foreground" />
                     </div>
                     <div className="space-y-2">
-                      <h2 className="text-2xl font-black">Identity Verified</h2>
-                      <p className="max-w-md text-muted-foreground">Your BVN and business details have been successfully verified via Interswitch identity services.</p>
+                      <h2 className="text-2xl font-black">Verification Pending</h2>
+                      <p className="max-w-md text-muted-foreground">To trade at higher volumes and earn trust badges, please complete your BVN and CAC verification.</p>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-                      <div className="p-4 rounded-xl bg-muted/50 text-left">
-                        <p className="text-xs font-bold text-muted-foreground uppercase">BVN Status</p>
-                        <p className="font-bold flex items-center gap-1 text-primary">
-                          <CheckCircle2 className="h-4 w-4" /> Verified
-                        </p>
-                      </div>
-                      <div className="p-4 rounded-xl bg-muted/50 text-left">
-                        <p className="text-xs font-bold text-muted-foreground uppercase">Role</p>
-                        <p className="font-bold">Verified Seller</p>
-                      </div>
-                    </div>
+                    <Button className="font-bold px-10">Start Verification</Button>
                  </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
-    </div>
-  );
-}
-
-// Helper components missing imports
-function Image({ src, alt, fill, className, dataAiHint }: any) {
-  return (
-    <div className={`relative h-full w-full ${className}`}>
-      <img 
-        src={src} 
-        alt={alt} 
-        className="h-full w-full object-cover" 
-        data-ai-hint={dataAiHint} 
-      />
     </div>
   );
 }

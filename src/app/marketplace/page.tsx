@@ -1,93 +1,30 @@
+
+"use client";
+
 import Navbar from '@/components/layout/Navbar';
 import ListingCard from '@/components/marketplace/ListingCard';
 import FilterPanel from '@/components/marketplace/FilterPanel';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Map as MapIcon, Grid as GridIcon } from 'lucide-react';
+import { Search, Map as MapIcon, Grid as GridIcon, Loader2 } from 'lucide-react';
 import { Listing } from '@/types';
-import { Timestamp } from 'firebase/firestore';
-
-// Mock data based on seed requirements
-const mockListings: Listing[] = [
-  {
-    id: '1',
-    sellerId: 's1',
-    sellerName: 'GreenField Cassava Processing',
-    sellerBadge: 'silver',
-    wasteType: 'cassava_peels',
-    wasteTypeLabel: 'Cassava Peels',
-    condition: 'dried',
-    quantityKg: 2500,
-    pricePerKg: 45,
-    totalPrice: 112500,
-    moqKg: 500,
-    qualityGrade: 'premium',
-    availableFrom: Timestamp.now(),
-    location: { address: 'Abeokuta Expressway, Ogun State', coordinates: { lat: 7.1475, lng: 3.3619 }, geohash: 's' },
-    status: 'active',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  },
-  {
-    id: '2',
-    sellerId: 's2',
-    sellerName: 'Lagos Rice Mill Cooperative',
-    sellerBadge: 'bronze',
-    wasteType: 'rice_husk',
-    wasteTypeLabel: 'Rice Husk',
-    condition: 'dried',
-    quantityKg: 5000,
-    pricePerKg: 30,
-    totalPrice: 150000,
-    moqKg: 1000,
-    qualityGrade: 'standard',
-    availableFrom: Timestamp.now(),
-    location: { address: 'Epe, Lagos State', coordinates: { lat: 6.5842, lng: 3.9856 }, geohash: 's' },
-    status: 'active',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  },
-  {
-    id: '3',
-    sellerId: 's3',
-    sellerName: 'Sunrise Poultry Farm',
-    sellerBadge: 'bronze',
-    wasteType: 'poultry_manure',
-    wasteTypeLabel: 'Poultry Manure',
-    condition: 'fresh',
-    quantityKg: 1000,
-    pricePerKg: 60,
-    totalPrice: 60000,
-    moqKg: 200,
-    qualityGrade: 'premium',
-    availableFrom: Timestamp.now(),
-    location: { address: 'Ikorodu, Lagos State', coordinates: { lat: 6.6194, lng: 3.5105 }, geohash: 's' },
-    status: 'active',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  },
-  {
-    id: '4',
-    sellerId: 's4',
-    sellerName: 'Timber Wood Mills',
-    sellerBadge: 'gold',
-    wasteType: 'sawdust',
-    wasteTypeLabel: 'Sawdust',
-    condition: 'dried',
-    quantityKg: 10000,
-    pricePerKg: 15,
-    totalPrice: 150000,
-    moqKg: 2000,
-    qualityGrade: 'standard',
-    availableFrom: Timestamp.now(),
-    location: { address: 'Ibadan, Oyo State', coordinates: { lat: 7.3775, lng: 3.9470 }, geohash: 's' },
-    status: 'active',
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-  }
-];
+import { useCollection, useMemoFirebase, useFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 
 export default function MarketplacePage() {
+  const { firestore } = useFirebase();
+
+  const activeListingsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'listings'),
+      where('status', '==', 'active'),
+      orderBy('createdAt', 'desc')
+    );
+  }, [firestore]);
+
+  const { data: listings, isLoading } = useCollection<Listing>(activeListingsQuery);
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -125,11 +62,22 @@ export default function MarketplacePage() {
               <Button className="absolute right-1 h-10 px-6">Search</Button>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {mockListings.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="flex h-64 items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : listings && listings.length > 0 ? (
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {listings.map((listing) => (
+                  <ListingCard key={listing.id} listing={listing} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex h-64 flex-col items-center justify-center rounded-3xl bg-muted/50 text-center">
+                <p className="text-xl font-bold">No active listings found.</p>
+                <p className="text-muted-foreground">Try adjusting your filters or search terms.</p>
+              </div>
+            )}
           </div>
         </div>
       </main>

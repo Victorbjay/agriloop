@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -13,32 +14,121 @@ import {
   Phone,
   MessageSquare,
   Package,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useDoc, useFirebase, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Listing } from '@/types';
+import { useMemoFirebase } from '@/firebase/provider';
+import { initiateInterswitchPayment } from '@/lib/interswitch';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export default function ListingDetailPage() {
   const { id } = useParams();
+  const { firestore } = useFirebase();
+  const { user } = useUser();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  // Simulated listing detail
-  const listing = {
-    id: id,
-    sellerName: "GreenField Cassava Processing",
-    sellerBadge: "silver",
-    wasteTypeLabel: "Cassava Peels",
-    condition: "Dried",
-    quantityKg: 2500,
-    pricePerKg: 45,
-    totalPrice: 112500,
-    moqKg: 500,
-    qualityGrade: "Premium",
-    location: "Abeokuta Expressway, Ogun State",
-    description: "High-quality sun-dried cassava peels. Low moisture content, ideal for livestock feed or biomass energy production. Bagged and ready for immediate pickup.",
-    availableFrom: "2024-03-20",
-    images: [`https://picsum.photos/seed/${id}/800/600`]
+  const listingRef = useMemoFirebase(() => {
+    if (!firestore || !id) return null;
+    return doc(firestore, 'listings', id as string);
+  }, [firestore, id]);
+
+  const { data: listing, isLoading } = useDoc<Listing>(listingRef);
+
+  const handleCheckout = async () => {
+    if (!user) {
+      toast({ title: "Login Required", description: "Please log in to purchase listings." });
+      router.push('/login');
+      return;
+    }
+
+    if (!listing) return;
+
+    setCheckoutLoading(true);
+    try {
+      // Simulate Interswitch Redirect
+      const redirectUrl = await initiateInterswitchPayment(
+        listing.id,
+        listing.totalPrice,
+        user.email || 'customer@example.com'
+      );
+      
+      // In a real app, we'd create the order in 'pending_payment' status first
+      // For demo, we simulate the redirection
+      toast({ title: "Redirecting...", description: "Connecting to Interswitch Secure Checkout." });
+      
+      // Simulate order creation
+      const orderId = `ORD-${Date.now()}`;
+      const orderData = {
+        id: orderId,
+        listingId: listing.id,
+        listingSnapshotId: listing.id,
+        listingSnapshotWasteType: listing.wasteType,
+        listingSnapshotWasteTypeLabel: listing.wasteTypeLabel,
+        listingSnapshotCondition: listing.condition,
+        listingSnapshotPricePerKg: listing.pricePerKg,
+        listingSnapshotMoqKg: listing.moqKg,
+        listingSnapshotQualityGrade: listing.qualityGrade,
+        listingSnapshotAvailableFrom: listing.availableFrom,
+        buyerId: user.uid,
+        buyerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Buyer',
+        sellerId: listing.sellerId,
+        sellerName: listing.sellerName,
+        quantityKg: listing.quantityKg,
+        pricePerKg: listing.pricePerKg,
+        totalAmount: listing.totalPrice,
+        deliveryMethod: 'self_pickup',
+        status: 'pending_payment',
+        interswitchRef: 'TBD',
+        transactionRef: 'TBD',
+        paymentPaidAt: new Date().toISOString(),
+        paymentVerifiedAt: new Date().toISOString(),
+        timelineOrderedAt: new Date().toISOString(),
+        pickupLocationAddress: listing.locationAddress,
+        pickupLocationLatitude: 6.5244,
+        pickupLocationLongitude: 3.3792,
+        pickupLocationContactPhone: '08012345678',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Use the provided non-blocking update to save the order
+      // Note: In production, this would be handled by a backend webhook after successful payment
+      // For demo purposes, we simulate the redirect to callback
+      window.location.href = '/payment/callback';
+      
+    } catch (error) {
+      toast({ variant: "destructive", title: "Error", description: "Could not initiate payment." });
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!listing) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-4">
+        <h1 className="text-2xl font-bold">Listing not found.</h1>
+        <Button asChild><Link href="/marketplace">Return to Marketplace</Link></Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -57,24 +147,12 @@ export default function ListingDetailPage() {
           <div className="space-y-4">
             <div className="relative aspect-[4/3] overflow-hidden rounded-3xl shadow-lg">
               <Image 
-                src={listing.images[0]} 
+                src={listing.images?.[0] || `https://picsum.photos/seed/${listing.id}/800/600`} 
                 alt={listing.wasteTypeLabel} 
                 fill 
                 className="object-cover"
                 data-ai-hint="agricultural waste"
               />
-            </div>
-            <div className="grid grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-                   <Image 
-                    src={`https://picsum.photos/seed/thumb-${i}/200/200`} 
-                    alt="Thumbnail" 
-                    fill 
-                    className="object-cover opacity-60 hover:opacity-100 transition-opacity cursor-pointer"
-                   />
-                </div>
-              ))}
             </div>
           </div>
 
@@ -92,7 +170,7 @@ export default function ListingDetailPage() {
               <h1 className="text-4xl font-black text-foreground">{listing.wasteTypeLabel} - {listing.quantityKg}kg</h1>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <MapPin className="h-5 w-5 text-primary" />
-                <span className="font-medium">{listing.location}</span>
+                <span className="font-medium">{listing.locationAddress}</span>
               </div>
             </div>
 
@@ -103,7 +181,7 @@ export default function ListingDetailPage() {
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Estimated Total</p>
-                <p className="text-2xl font-black">₦{listing.totalPrice.toLocaleString()}</p>
+                <p className="text-2xl font-black">₦{listing.totalPrice?.toLocaleString()}</p>
               </div>
             </div>
 
@@ -127,15 +205,20 @@ export default function ListingDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">Available: <b>{listing.availableFrom}</b></span>
+                    <span className="text-sm">Available From: <b>{new Date(listing.availableFrom).toLocaleDateString()}</b></span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
             <div className="flex gap-4">
-              <Button size="lg" className="flex-1 font-bold h-14 bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg">
-                Proceed to Checkout
+              <Button 
+                size="lg" 
+                className="flex-1 font-bold h-14 bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg"
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+              >
+                {checkoutLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Proceed to Checkout"}
               </Button>
               <Button size="icon" variant="outline" className="h-14 w-14 rounded-xl">
                 <MessageSquare className="h-6 w-6" />
@@ -147,11 +230,11 @@ export default function ListingDetailPage() {
 
             <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50">
                <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-                 GF
+                 {listing.sellerName[0]}
                </div>
                <div>
                  <p className="font-bold">{listing.sellerName}</p>
-                 <p className="text-xs text-muted-foreground">Joined 2 years ago • 45 successful deals</p>
+                 <p className="text-xs text-muted-foreground">Verified AgriLoop Seller</p>
                </div>
             </div>
           </div>
