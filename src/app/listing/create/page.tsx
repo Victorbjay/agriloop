@@ -8,16 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WASTE_TYPES, WASTE_CONDITIONS, QUALITY_GRADES } from '@/lib/constants';
-import { Sparkles, Loader2, MapPin, Package, TrendingUp, Camera, X, Lock } from 'lucide-react';
+import { Sparkles, Loader2, MapPin, Package, TrendingUp, Camera, X, Lock, ShieldAlert } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { generateListingDescription } from '@/ai/flows/ai-listing-description-generator';
 import { aiWasteValorizationSuggestion } from '@/ai/flows/ai-waste-valorization-suggestion';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase, useUser } from '@/firebase';
+import { useFirebase, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { UserProfile } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -27,6 +28,13 @@ export default function CreateListingPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(profileRef);
   
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -140,7 +148,7 @@ export default function CreateListingPage() {
       id: newListingId,
       sellerId: user.uid,
       sellerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Seller',
-      sellerBadge: 'none',
+      sellerBadge: profile?.badge || 'none',
       wasteType: formData.wasteType,
       wasteTypeLabel: typeLabel,
       condition: formData.condition,
@@ -167,7 +175,7 @@ export default function CreateListingPage() {
     router.push('/dashboard');
   };
 
-  if (isUserLoading) {
+  if (isUserLoading || profileLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -190,6 +198,34 @@ export default function CreateListingPage() {
           <Button asChild className="px-10 h-12 font-bold shadow-lg">
             <Link href="/login">Sign In Now</Link>
           </Button>
+        </main>
+      </div>
+    );
+  }
+
+  // Role Protection: Only Sellers can list products
+  if (profile && profile.role !== 'seller') {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex flex-col items-center justify-center p-4 text-center space-y-6">
+          <div className="bg-destructive/10 rounded-full p-6">
+            <ShieldAlert className="h-12 w-12 text-destructive" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black">Seller Access Only</h1>
+            <p className="text-muted-foreground max-w-sm">
+              Your account is registered as a <b>Buyer</b>. Only verified Sellers can list waste products on the AgriLoop marketplace.
+            </p>
+          </div>
+          <div className="flex flex-col gap-4">
+            <Button asChild variant="outline">
+              <Link href="/dashboard">Back to Dashboard</Link>
+            </Button>
+            <Button variant="ghost" className="text-xs text-muted-foreground">
+              Contact support to change your account role.
+            </Button>
+          </div>
         </main>
       </div>
     );

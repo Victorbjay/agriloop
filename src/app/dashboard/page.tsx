@@ -14,7 +14,9 @@ import {
   ShoppingCart,
   DollarSign,
   Trash2,
-  ShieldAlert
+  ShieldAlert,
+  BarChart3,
+  Search
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUser, useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
@@ -50,31 +52,31 @@ export default function DashboardPage() {
 
   const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(profileRef);
 
-  // Fetch user's listings
+  // Fetch user's listings (Relevant for Sellers)
   const userListingsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || profile?.role !== 'seller') return null;
     return query(
       collection(firestore, 'listings'),
       where('sellerId', '==', user.uid),
       limit(20)
     );
-  }, [firestore, user]);
+  }, [firestore, user, profile?.role]);
 
   const { data: listings, isLoading: listingsLoading } = useCollection<Listing>(userListingsQuery);
 
-  // Fetch user's sales (orders where user is seller)
+  // Fetch user's sales (Relevant for Sellers)
   const salesQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || profile?.role !== 'seller') return null;
     return query(
       collection(firestore, 'orders'),
       where('sellerId', '==', user.uid),
       limit(20)
     );
-  }, [firestore, user]);
+  }, [firestore, user, profile?.role]);
 
   const { data: sales, isLoading: salesLoading } = useCollection<Order>(salesQuery);
 
-  // Fetch user's purchases (orders where user is buyer)
+  // Fetch user's purchases (Relevant for Buyers)
   const purchasesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -103,7 +105,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (isUserLoading || (user && profileLoading)) {
+  if (isUserLoading || profileLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -120,6 +122,7 @@ export default function DashboardPage() {
     );
   }
 
+  const isSeller = profile?.role === 'seller';
   const welcomeName = profile ? `${profile.firstName} ${profile.lastName}` : (user.displayName || 'Agro-Partner');
 
   return (
@@ -139,50 +142,73 @@ export default function DashboardPage() {
 
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-black text-foreground sm:text-3xl">Welcome back, {welcomeName}</h1>
-            <p className="text-sm text-muted-foreground sm:text-base">Your account is currently <span className="font-bold text-primary">Active</span>.</p>
+            <h1 className="text-2xl font-black text-foreground sm:text-3xl">
+              {isSeller ? 'Vendor Dashboard' : 'Procurement Dashboard'}
+            </h1>
+            <p className="text-sm text-muted-foreground sm:text-base">
+              Welcome back, <span className="font-bold text-foreground">{welcomeName}</span>. 
+              Account status: <span className="font-bold text-primary">Active</span>.
+            </p>
           </div>
           <div className="flex gap-2">
-            <Button className="flex items-center gap-2 w-full sm:w-auto" asChild>
-              <Link href="/listing/create">
-                <Plus className="h-4 w-4" />
-                New Listing
-              </Link>
-            </Button>
+            {isSeller ? (
+              <Button className="flex items-center gap-2 w-full sm:w-auto" asChild>
+                <Link href="/listing/create">
+                  <Plus className="h-4 w-4" />
+                  New Listing
+                </Link>
+              </Button>
+            ) : (
+              <Button variant="outline" className="flex items-center gap-2 w-full sm:w-auto" asChild>
+                <Link href="/marketplace">
+                  <Search className="h-4 w-4" />
+                  Find Waste
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
         <div className="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
-              <CardTitle className="text-xs sm:text-sm font-medium">Revenue</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">{isSeller ? 'Revenue' : 'Spending'}</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold">₦{sales?.reduce((acc, o) => acc + (o.status === 'completed' ? o.totalAmount : 0), 0).toLocaleString() || 0}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Completed sales</p>
+              <div className="text-lg sm:text-2xl font-bold">
+                ₦{isSeller 
+                  ? sales?.reduce((acc, o) => acc + (o.status === 'completed' ? o.totalAmount : 0), 0).toLocaleString() 
+                  : purchases?.reduce((acc, o) => acc + (o.status === 'completed' ? o.totalAmount : 0), 0).toLocaleString() || 0}
+              </div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Total {isSeller ? 'earned' : 'invested'}</p>
             </CardContent>
           </Card>
+          
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
-              <CardTitle className="text-xs sm:text-sm font-medium">My Listings</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">{isSeller ? 'Active Listings' : 'Orders'}</CardTitle>
               <Package className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold">{listings?.length || 0}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Active in marketplace</p>
+              <div className="text-lg sm:text-2xl font-bold">{isSeller ? listings?.length : purchases?.length || 0}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{isSeller ? 'Live on market' : 'Total transactions'}</p>
             </CardContent>
           </Card>
+
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
-              <CardTitle className="text-xs sm:text-sm font-medium">Buying</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-primary" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Impact Score</CardTitle>
+              <BarChart3 className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold">{purchases?.length || 0}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Active purchases</p>
+              <div className="text-lg sm:text-2xl font-bold">
+                {((isSeller ? (listings?.length || 0) : (purchases?.length || 0)) * 1.5).toFixed(1)} <span className="text-xs font-normal">Tons</span>
+              </div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">CO2 Diverted Est.</p>
             </CardContent>
           </Card>
+
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
               <CardTitle className="text-xs sm:text-sm font-medium">Trust Rank</CardTitle>
@@ -195,106 +221,110 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        <Tabs defaultValue="listings" className="w-full">
+        <Tabs defaultValue={isSeller ? "listings" : "purchases"} className="w-full">
           <div className="overflow-x-auto pb-2 mb-8">
             <TabsList className="bg-muted/50 inline-flex w-auto min-w-full sm:min-w-0">
-              <TabsTrigger value="listings" className="px-6 sm:px-8">My Listings</TabsTrigger>
-              <TabsTrigger value="sales" className="px-6 sm:px-8">Sales Activity</TabsTrigger>
+              {isSeller && <TabsTrigger value="listings" className="px-6 sm:px-8">My Listings</TabsTrigger>}
+              {isSeller && <TabsTrigger value="sales" className="px-6 sm:px-8">Sales Activity</TabsTrigger>}
               <TabsTrigger value="purchases" className="px-6 sm:px-8">Purchases</TabsTrigger>
               <TabsTrigger value="verification" className="px-6 sm:px-8">Verification</TabsTrigger>
               <TabsTrigger value="settings" className="px-6 sm:px-8">Settings</TabsTrigger>
             </TabsList>
           </div>
           
-          <TabsContent value="listings">
-             <div className="grid gap-6">
-                {listingsLoading ? (
-                  <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
-                ) : listings && listings.length > 0 ? (
-                  listings.map((item) => (
-                    <Card key={item.id} className="flex flex-col overflow-hidden border-none shadow-sm md:flex-row">
-                      <div className="relative h-48 w-full md:w-64">
-                         <Image 
-                          src={item.images?.[0] || `https://picsum.photos/seed/${item.id}/300/200`} 
-                          alt="Listing" 
-                          fill 
-                          className="object-cover"
-                         />
-                      </div>
-                      <div className="flex flex-1 flex-col p-6">
-                         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div>
-                              <h3 className="text-xl font-bold">{item.wasteTypeLabel} ({item.condition})</h3>
-                              <p className="text-xs text-muted-foreground">ID: {item.id}</p>
-                            </div>
-                            <div className="sm:text-right">
-                              <p className="text-lg font-black text-primary">₦{item.pricePerKg}/kg</p>
-                              <p className="text-xs text-muted-foreground">{item.quantityKg}kg available</p>
-                            </div>
-                         </div>
-                         <div className="mt-auto flex gap-2 pt-4">
-                            <Button size="sm" variant="outline" className="flex-1 sm:flex-none" asChild>
-                              <Link href={`/marketplace/${item.id}`}>View</Link>
-                            </Button>
-                         </div>
-                      </div>
-                    </Card>
-                  ))
-                ) : (
-                  <div className="rounded-3xl bg-muted/30 py-16 text-center px-4">
-                    <p className="text-lg font-bold">You haven't posted any listings yet.</p>
-                    <Button className="mt-4" asChild><Link href="/listing/create">Create Your First Listing</Link></Button>
-                  </div>
-                )}
-             </div>
-          </TabsContent>
+          {isSeller && (
+            <TabsContent value="listings">
+               <div className="grid gap-6">
+                  {listingsLoading ? (
+                    <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
+                  ) : listings && listings.length > 0 ? (
+                    listings.map((item) => (
+                      <Card key={item.id} className="flex flex-col overflow-hidden border-none shadow-sm md:flex-row">
+                        <div className="relative h-48 w-full md:w-64">
+                           <Image 
+                            src={item.images?.[0] || `https://picsum.photos/seed/${item.id}/300/200`} 
+                            alt="Listing" 
+                            fill 
+                            className="object-cover"
+                           />
+                        </div>
+                        <div className="flex flex-1 flex-col p-6">
+                           <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div>
+                                <h3 className="text-xl font-bold">{item.wasteTypeLabel} ({item.condition})</h3>
+                                <p className="text-xs text-muted-foreground">ID: {item.id}</p>
+                              </div>
+                              <div className="sm:text-right">
+                                <p className="text-lg font-black text-primary">₦{item.pricePerKg}/kg</p>
+                                <p className="text-xs text-muted-foreground">{item.quantityKg}kg available</p>
+                              </div>
+                           </div>
+                           <div className="mt-auto flex gap-2 pt-4">
+                              <Button size="sm" variant="outline" className="flex-1 sm:flex-none" asChild>
+                                <Link href={`/marketplace/${item.id}`}>View</Link>
+                              </Button>
+                           </div>
+                        </div>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="rounded-3xl bg-muted/30 py-16 text-center px-4">
+                      <p className="text-lg font-bold">You haven't posted any listings yet.</p>
+                      <Button className="mt-4" asChild><Link href="/listing/create">Create Your First Listing</Link></Button>
+                    </div>
+                  )}
+               </div>
+            </TabsContent>
+          )}
 
-          <TabsContent value="sales">
-             <div className="rounded-xl bg-white shadow-sm overflow-x-auto">
-                <table className="w-full border-collapse min-w-[600px]">
-                  <thead>
-                    <tr className="border-b text-left text-xs sm:text-sm font-bold text-muted-foreground">
-                      <th className="py-4 pl-4">Order ID</th>
-                      <th className="py-4">Buyer</th>
-                      <th className="py-4">Quantity</th>
-                      <th className="py-4">Total</th>
-                      <th className="py-4">Status</th>
-                      <th className="py-4 pr-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salesLoading ? (
-                      <tr><td colSpan={6} className="py-8 text-center"><Loader2 className="mx-auto animate-spin" /></td></tr>
-                    ) : sales && sales.length > 0 ? (
-                      sales.map((order) => (
-                        <tr key={order.id} className="border-b last:border-0 hover:bg-muted/10 transition-colors">
-                          <td className="py-4 pl-4 font-medium text-xs sm:text-sm">{order.id}</td>
-                          <td className="py-4 text-xs sm:text-sm">{order.buyerName}</td>
-                          <td className="py-4 text-xs sm:text-sm">{order.quantityKg} kg</td>
-                          <td className="py-4 text-xs sm:text-sm font-bold">₦{order.totalAmount.toLocaleString()}</td>
-                          <td className="py-4">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-orange-700 capitalize">
-                              {order.status.replace('_', ' ')}
-                            </span>
-                          </td>
-                          <td className="py-4 pr-4 text-right">
-                            <Button size="sm" variant="ghost" className="text-primary font-bold h-8 text-xs" asChild>
-                              <Link href={`/orders/${order.id}`}>Manage <ArrowRight className="ml-1 h-3 w-3" /></Link>
-                            </Button>
+          {isSeller && (
+            <TabsContent value="sales">
+               <div className="rounded-xl bg-white shadow-sm overflow-x-auto">
+                  <table className="w-full border-collapse min-w-[600px]">
+                    <thead>
+                      <tr className="border-b text-left text-xs sm:text-sm font-bold text-muted-foreground">
+                        <th className="py-4 pl-4">Order ID</th>
+                        <th className="py-4">Buyer</th>
+                        <th className="py-4">Quantity</th>
+                        <th className="py-4">Total</th>
+                        <th className="py-4">Status</th>
+                        <th className="py-4 pr-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {salesLoading ? (
+                        <tr><td colSpan={6} className="py-8 text-center"><Loader2 className="mx-auto animate-spin" /></td></tr>
+                      ) : sales && sales.length > 0 ? (
+                        sales.map((order) => (
+                          <tr key={order.id} className="border-b last:border-0 hover:bg-muted/10 transition-colors">
+                            <td className="py-4 pl-4 font-medium text-xs sm:text-sm">{order.id}</td>
+                            <td className="py-4 text-xs sm:text-sm">{order.buyerName}</td>
+                            <td className="py-4 text-xs sm:text-sm">{order.quantityKg} kg</td>
+                            <td className="py-4 text-xs sm:text-sm font-bold">₦{order.totalAmount.toLocaleString()}</td>
+                            <td className="py-4">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-orange-700 capitalize">
+                                {order.status.replace('_', ' ')}
+                              </span>
+                            </td>
+                            <td className="py-4 pr-4 text-right">
+                              <Button size="sm" variant="ghost" className="text-primary font-bold h-8 text-xs" asChild>
+                                <Link href={`/orders/${order.id}`}>Manage <ArrowRight className="ml-1 h-3 w-3" /></Link>
+                              </Button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">
+                            No sales activity yet.
                           </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">
-                          No sales found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-             </div>
-          </TabsContent>
+                      )}
+                    </tbody>
+                  </table>
+               </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="purchases">
              <div className="rounded-xl bg-white shadow-sm overflow-x-auto">
@@ -350,7 +380,11 @@ export default function DashboardPage() {
                     </div>
                     <div className="space-y-2">
                       <h2 className="text-xl sm:text-2xl font-black">{profile?.verificationStatus === 'verified' ? 'Verification Complete' : 'Verification Pending'}</h2>
-                      <p className="max-w-md text-sm sm:text-base text-muted-foreground">To trade at higher volumes and earn trust badges, please complete your BVN and CAC verification.</p>
+                      <p className="max-w-md text-sm sm:text-base text-muted-foreground">
+                        {isSeller 
+                          ? 'Sellers must complete BVN and CAC verification to trade at high volumes.' 
+                          : 'Complete your verification to build trust with high-quality sellers.'}
+                      </p>
                     </div>
                     {profile?.verificationStatus !== 'verified' && (
                       <Button className="font-bold px-10 w-full sm:w-auto" asChild>
