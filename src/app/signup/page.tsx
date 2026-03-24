@@ -1,4 +1,3 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -12,11 +11,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useFirebase } from '@/firebase';
 import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 export default function SignupPage() {
   const { auth, firestore } = useFirebase();
@@ -31,7 +29,7 @@ export default function SignupPage() {
     password: '',
   });
 
-  const createProfile = async (uid: string, email: string, firstName: string, lastName: string) => {
+  const createProfile = (uid: string, email: string, firstName: string, lastName: string) => {
     const userRef = doc(firestore, 'users', uid);
     const profileData = {
       id: uid,
@@ -39,7 +37,7 @@ export default function SignupPage() {
       role: role,
       firstName: firstName,
       lastName: lastName,
-      phone: '', // To be filled in profile
+      phone: '',
       bvn: '',
       bvnVerified: false,
       cacVerified: false,
@@ -52,16 +50,8 @@ export default function SignupPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    try {
-      await setDoc(userRef, profileData);
-    } catch (e: any) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: userRef.path,
-        operation: 'create',
-        requestResourceData: profileData,
-      }));
-      throw e;
-    }
+    // Follows non-blocking pattern
+    setDocumentNonBlocking(userRef, profileData, { merge: true });
   };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -73,7 +63,7 @@ export default function SignupPage() {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      await createProfile(
+      createProfile(
         userCredential.user.uid,
         userCredential.user.email!,
         formData.firstName,
@@ -94,7 +84,7 @@ export default function SignupPage() {
     try {
       const result = await signInWithPopup(auth, provider);
       const nameParts = result.user.displayName?.split(' ') || ['', ''];
-      await createProfile(
+      createProfile(
         result.user.uid,
         result.user.email!,
         nameParts[0],

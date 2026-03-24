@@ -1,4 +1,3 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -21,7 +20,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useFirebase, useUser } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, collection } from 'firebase/firestore';
 import { Listing } from '@/types';
 import { useMemoFirebase } from '@/firebase/provider';
 import { initiateInterswitchPayment } from '@/lib/interswitch';
@@ -62,11 +61,8 @@ export default function ListingDetailPage() {
         user.email || 'customer@example.com'
       );
       
-      // In a real app, we'd create the order in 'pending_payment' status first
-      // For demo, we simulate the redirection
-      toast({ title: "Redirecting...", description: "Connecting to Interswitch Secure Checkout." });
-      
-      // Simulate order creation
+      // For demo, we create the order immediately
+      const ordersRef = collection(firestore, 'orders');
       const orderId = `ORD-${Date.now()}`;
       const orderData = {
         id: orderId,
@@ -101,14 +97,18 @@ export default function ListingDetailPage() {
         updatedAt: new Date().toISOString(),
       };
 
-      // Use the provided non-blocking update to save the order
-      // Note: In production, this would be handled by a backend webhook after successful payment
-      // For demo purposes, we simulate the redirect to callback
-      window.location.href = '/payment/callback';
+      // Use non-blocking update
+      addDocumentNonBlocking(ordersRef, orderData);
+      
+      toast({ title: "Redirecting...", description: "Connecting to Interswitch Secure Checkout." });
+      
+      // Simulate redirect
+      setTimeout(() => {
+        window.location.href = '/payment/callback';
+      }, 1500);
       
     } catch (error) {
       toast({ variant: "destructive", title: "Error", description: "Could not initiate payment." });
-    } finally {
       setCheckoutLoading(false);
     }
   };
@@ -143,7 +143,6 @@ export default function ListingDetailPage() {
         </Link>
 
         <div className="grid gap-8 lg:grid-cols-2">
-          {/* Images Section */}
           <div className="space-y-4">
             <div className="relative aspect-[4/3] overflow-hidden rounded-3xl shadow-lg">
               <Image 
@@ -156,7 +155,6 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
-          {/* Details Section */}
           <div className="space-y-6">
             <div className="flex flex-col gap-4">
               <div className="flex flex-wrap gap-2">
