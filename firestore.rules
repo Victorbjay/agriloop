@@ -10,24 +10,6 @@ service cloud.firestore {
      * collaborator-based model for transactions (Orders). Marketplace listings are 
      * publicly readable to facilitate discovery but strictly controlled by the seller 
      * for modifications.
-     * 
-     * Data Structure:
-     * - /users/{userId}: Private user profiles, owned by the authenticated user.
-     * - /listings/{listingId}: Public agricultural waste listings, owned by sellers.
-     * - /orders/{orderId}: Private transaction records shared between a buyer and a seller.
-     * 
-     * Key Security Decisions:
-     * 1. Authorization Independence: All security decisions for listings and orders 
-     *    rely on denormalized IDs (sellerId, buyerId) stored directly on the document. 
-     *    This avoids expensive get() calls and ensures performant rule evaluation.
-     * 2. Self-Creation: Users can create their own profile document provided the 
-     *    document ID matches their Firebase Auth UID.
-     * 3. Shared Access: Orders are accessible only to the participating buyer and seller.
-     * 4. Prototyping Flexibility: While authorization is strictly enforced, data 
-     *    schema validation is minimized to allow for rapid frontend iteration.
-     * 5. Authentication Agnostic: The rules use the unique UID provided by Firebase 
-     *    Auth, making them compatible with Email/Password, Google Sign-in, or 
-     *    Anonymous authentication.
      */
 
     // --- Global Helper Functions ---
@@ -43,89 +25,56 @@ service cloud.firestore {
     }
 
     /** Checks if the user owns the existing document and it exists. */
-    function isExistingOwner(ownerId) {
-      return isSignedIn() && resource != null && resource.data[ownerId] == request.auth.uid;
-    }
-
-    /** 
-     * Checks if the user is a participant (buyer or seller) in a shared resource.
-     * Used for Orders where two parties need access.
-     */
-    function isOrderParticipant() {
-      return isSignedIn() && resource != null && (
-        resource.data.buyerId == request.auth.uid || 
-        resource.data.sellerId == request.auth.uid
-      );
+    function isExistingOwner(ownerIdField) {
+      return isSignedIn() && resource != null && resource.data[ownerIdField] == request.auth.uid;
     }
 
     // --- Collection Rules ---
 
     /**
      * @description Rules for the User collection, managing private profiles.
-     * @path /users/{userId}
-     * @allow (get, list, create, update) if the authenticated UID matches the {userId} path.
-     * @deny (read/write) if the UID does not match the path.
-     * @principle Path-based ownership and self-creation.
      */
     match /users/{userId} {
-      allow get, list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
       
-      // On create, ensure the internal 'id' field matches the document ID (the UID).
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      
-      // On update, ensure the 'id' field is immutable for relational integrity.
       allow update: if isOwner(userId) && (request.resource.data.id == resource.data.id);
-      
-      // Profile deletion is generally restricted to the owner but must exist first.
-      allow delete: if isOwner(userId) && resource != null;
+      allow delete: if isOwner(userId);
     }
 
     /**
      * @description Rules for the Listings collection (Marketplace).
-     * @path /listings/{listingId}
-     * @allow (get, list) for everyone (Public Marketplace).
-     * @allow (create, update, delete) only for the authenticated seller.
-     * @deny (write) if the sellerId does not match the authenticated user.
-     * @principle Public read with owner-only writes using denormalized sellerId.
      */
     match /listings/{listingId} {
       allow get, list: if true;
 
-      // On create, the user must set themselves as the sellerId.
       allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
-
-      // Update and delete require ownership of the existing document.
       allow update: if isExistingOwner('sellerId') && (request.resource.data.sellerId == resource.data.sellerId);
       allow delete: if isExistingOwner('sellerId');
     }
 
     /**
      * @description Rules for the Orders collection (Transactions).
-     * @path /orders/{orderId}
-     * @allow (get, list) for the participating buyer or seller.
-     * @allow (create) for the buyer.
-     * @allow (update) for the buyer or seller (to change status/timeline).
-     * @deny (read/write) for any user not associated with the order.
-     * @principle Shared access control using denormalized participant IDs.
      */
     match /orders/{orderId} {
       // Both buyer and seller need to see the order for their dashboards.
-      allow get, list: if isSignedIn() && (
+      // Rules are not filters: clients MUST query using where('buyerId', '==', uid) or similar.
+      allow read: if isSignedIn() && (
         (resource != null && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid)) ||
-        // Support listing orders filtered by the current user's role
-        (request.query.limit <= 100) // General safety limit for listing
+        // Support initial empty state queries or metadata lookups
+        (request.query.limit <= 100)
       );
 
       // Only the buyer can initiate an order.
       allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
 
       // Updates (status changes, timeline updates) can be made by either party.
-      // Immutable check: buyerId and sellerId cannot be changed once created.
-      allow update: if isOrderParticipant() && 
+      allow update: if isSignedIn() && 
+                    (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid) &&
                     request.resource.data.buyerId == resource.data.buyerId && 
                     request.resource.data.sellerId == resource.data.sellerId;
 
-      // Orders are typically immutable records and should not be deleted via client.
       allow delete: if false;
     }
   }

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -8,18 +7,15 @@ import { Button } from '@/components/ui/button';
 import { 
   Plus, 
   TrendingUp, 
-  ShoppingBag, 
   Clock, 
-  CheckCircle2, 
   ShieldCheck,
   Package,
   ArrowRight,
   Loader2
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
 import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where, limit } from 'firebase/firestore';
 import { Listing, Order } from '@/types';
 import Image from 'next/image';
 
@@ -33,19 +29,19 @@ export default function DashboardPage() {
     return query(
       collection(firestore, 'listings'),
       where('sellerId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      limit(20)
     );
   }, [firestore, user]);
 
   const { data: listings, isLoading: listingsLoading } = useCollection<Listing>(userListingsQuery);
 
-  // Fetch user's orders (as buyer or seller)
+  // Fetch user's orders (as seller)
   const userOrdersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'orders'),
       where('sellerId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      limit(20)
     );
   }, [firestore, user]);
 
@@ -171,7 +167,6 @@ export default function DashboardPage() {
                               <Link href={`/marketplace/${item.id}`}>View</Link>
                             </Button>
                             <Button size="sm" variant="outline">Edit</Button>
-                            <Button size="sm" className="bg-accent text-accent-foreground">Deactivate</Button>
                          </div>
                       </div>
                     </Card>

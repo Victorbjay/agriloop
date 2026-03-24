@@ -1,4 +1,3 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -9,13 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WASTE_TYPES, WASTE_CONDITIONS, QUALITY_GRADES } from '@/lib/constants';
-import { Sparkles, Loader2, MapPin, DollarSign, Package, TrendingUp } from 'lucide-react';
+import { Sparkles, Loader2, MapPin, Package, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { generateListingDescription } from '@/ai/flows/ai-listing-description-generator';
 import { aiWasteValorizationSuggestion } from '@/ai/flows/ai-waste-valorization-suggestion';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase, useUser } from '@/firebase';
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -107,7 +106,7 @@ export default function CreateListingPage() {
       id: newListingId,
       sellerId: user.uid,
       sellerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Seller',
-      sellerBadge: 'none', // Initial status
+      sellerBadge: 'none',
       wasteType: formData.wasteType,
       wasteTypeLabel: typeLabel,
       condition: formData.condition,
@@ -118,9 +117,9 @@ export default function CreateListingPage() {
       qualityGrade: formData.qualityGrade,
       availableFrom: new Date().toISOString(),
       locationAddress: formData.locationAddress,
-      locationLatitude: 6.5244, // Mock coordinates
+      locationLatitude: 6.5244,
       locationLongitude: 3.3792,
-      locationGeohash: 's1', // Mock geohash
+      locationGeohash: 's1',
       description: formData.description,
       status: 'active',
       createdAt: new Date().toISOString(),

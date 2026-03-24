@@ -1,32 +1,27 @@
-import { Timestamp, GeoPoint } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 export type UserRole = 'seller' | 'buyer';
 
 export interface UserProfile {
-  uid: string;
+  id: string;
   email: string;
   role: UserRole;
-  profile: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    businessName?: string;
-    rcNumber?: string;
-  };
-  verification: {
-    bvn: string;
-    bvnVerified: boolean;
-    cacVerified: boolean;
-    verificationStatus: 'pending' | 'verified' | 'failed';
-    verifiedAt?: Timestamp;
-  };
-  location: {
-    address: string;
-    coordinates: { lat: number; lng: number };
-  };
+  firstName: string;
+  lastName: string;
+  phone: string;
+  businessName?: string;
+  rcNumber?: string;
+  bvn: string;
+  bvnVerified: boolean;
+  cacVerified: boolean;
+  verificationStatus: 'pending' | 'verified' | 'failed';
+  verifiedAt?: string;
+  address: string;
+  latitude: number;
+  longitude: number;
   badge: 'none' | 'bronze' | 'silver' | 'gold';
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type WasteType = 
@@ -52,18 +47,17 @@ export interface Listing {
   totalPrice: number;
   moqKg: number;
   qualityGrade: 'premium' | 'standard' | 'mixed';
-  availableFrom: Timestamp;
-  availableUntil?: Timestamp;
-  location: {
-    address: string;
-    coordinates: { lat: number; lng: number };
-    geohash: string;
-  };
+  availableFrom: string;
+  availableUntil?: string;
+  locationAddress: string;
+  locationLatitude: number;
+  locationLongitude: number;
+  locationGeohash: string;
   description?: string;
   images?: string[];
   status: 'active' | 'sold' | 'expired' | 'draft';
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type OrderStatus = 
@@ -78,7 +72,17 @@ export type OrderStatus =
 export interface Order {
   id: string;
   listingId: string;
-  listingSnapshot: Listing;
+  listingSnapshotId: string;
+  listingSnapshotWasteType: string;
+  listingSnapshotWasteTypeLabel: string;
+  listingSnapshotCondition: string;
+  listingSnapshotPricePerKg: number;
+  listingSnapshotMoqKg: number;
+  listingSnapshotQualityGrade: string;
+  listingSnapshotAvailableFrom: string;
+  listingSnapshotAvailableUntil?: string;
+  listingSnapshotDescription?: string;
+  listingSnapshotImages?: string[];
   buyerId: string;
   buyerName: string;
   sellerId: string;
@@ -88,26 +92,21 @@ export interface Order {
   totalAmount: number;
   deliveryMethod: 'self_pickup' | 'request_delivery';
   status: OrderStatus;
-  payment?: {
-    interswitchRef: string;
-    transactionRef: string;
-    paidAt: Timestamp;
-    verifiedAt: Timestamp;
-  };
-  timeline: {
-    orderedAt: Timestamp;
-    paidAt?: Timestamp;
-    confirmedAt?: Timestamp;
-    readyAt?: Timestamp;
-    completedAt?: Timestamp;
-    cancelledAt?: Timestamp;
-  };
-  pickupLocation: {
-    address: string;
-    coordinates: { lat: number; lng: number };
-    contactPhone: string;
-  };
+  interswitchRef: string;
+  transactionRef: string;
+  paymentPaidAt: string;
+  paymentVerifiedAt: string;
+  timelineOrderedAt: string;
+  timelinePaidAt?: string;
+  timelineConfirmedAt?: string;
+  timelineReadyAt?: string;
+  timelineCompletedAt?: string;
+  timelineCancelledAt?: string;
+  pickupLocationAddress: string;
+  pickupLocationLatitude: number;
+  pickupLocationLongitude: number;
+  pickupLocationContactPhone: string;
   disputeReason?: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: string;
+  updatedAt: string;
 }
