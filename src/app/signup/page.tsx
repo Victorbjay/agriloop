@@ -47,7 +47,7 @@ export default function SignupPage() {
       firstName: firstName,
       lastName: lastName,
       phone: phone,
-      bvn: bvn,
+      bvn: bvn.trim(),
       bvnVerified: badge !== 'none',
       cacVerified: false,
       verificationStatus: badge !== 'none' ? 'verified' : 'pending',
@@ -80,18 +80,19 @@ export default function SignupPage() {
   };
 
   const handleBvnValidation = async () => {
-    if (bvn.length !== 11) {
+    const trimmedBvn = bvn.trim();
+    if (trimmedBvn.length !== 11) {
       toast({ title: "Invalid BVN", description: "BVN must be 11 digits.", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      const result = await checkBvnBoolean(bvn);
+      const result = await checkBvnBoolean(trimmedBvn);
       if (result.valid) {
-        setStep('IDENTITY_CHECK');
         // Pre-fetch full details for auto-fill in identity check
-        const details = await getBvnFullDetails(bvn);
+        const details = await getBvnFullDetails(trimmedBvn);
         setBvnData(details);
+        setStep('IDENTITY_CHECK');
       } else {
         toast({ title: "Validation Failed", description: result.message, variant: "destructive" });
       }
@@ -106,14 +107,18 @@ export default function SignupPage() {
     if (!bvnData) return;
     
     const inputName = `${formData.firstName} ${formData.lastName}`.toLowerCase().trim();
-    const bvnName = `${bvnData.firstName} ${bvnData.lastName}`.toLowerCase().trim();
+    const bvnFirstName = bvnData.firstName.toLowerCase().trim();
+    const bvnLastName = bvnData.lastName.toLowerCase().trim();
 
-    if (inputName === bvnName) {
+    // Flexible matching: check if both names are present in some order
+    const isMatch = inputName.includes(bvnFirstName) && inputName.includes(bvnLastName);
+
+    if (isMatch) {
       handleFinalSignup('bronze', bvnData.phone);
     } else {
       toast({ 
         title: "Name Mismatch", 
-        description: "Your provided name does not match BVN records. Please check and retry.", 
+        description: `Records for this BVN are registered to ${bvnData.firstName} ${bvnData.lastName}. Please correct your name or use your own BVN.`, 
         variant: "destructive" 
       });
     }
@@ -154,7 +159,15 @@ export default function SignupPage() {
       );
       router.push('/dashboard');
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Google Signup Failed", description: error.message });
+      if (error.code === 'auth/operation-not-allowed') {
+        toast({ 
+          variant: "destructive", 
+          title: "Google Login Disabled", 
+          description: "Please enable Google Sign-In in your Firebase Console (Authentication > Sign-in method)." 
+        });
+      } else {
+        toast({ variant: "destructive", title: "Google Signup Failed", description: error.message });
+      }
     } finally {
       setLoading(false);
     }
@@ -316,7 +329,7 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground text-center">
-                  To earn your <b>Bronze Trust Badge</b>, confirm your full name matches the BVN record above.
+                  To earn your <b>Bronze Trust Badge</b>, confirm your name matches the BVN record above.
                 </p>
                 <Button className="w-full font-bold h-11 bg-accent text-accent-foreground" onClick={handleIdentityMatch} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
