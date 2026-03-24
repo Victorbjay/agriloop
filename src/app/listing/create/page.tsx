@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WASTE_TYPES, WASTE_CONDITIONS, QUALITY_GRADES } from '@/lib/constants';
-import { Sparkles, Loader2, MapPin, Package, TrendingUp, Camera, X } from 'lucide-react';
+import { Sparkles, Loader2, MapPin, Package, TrendingUp, Camera, X, Lock } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { generateListingDescription } from '@/ai/flows/ai-listing-description-generator';
 import { aiWasteValorizationSuggestion } from '@/ai/flows/ai-waste-valorization-suggestion';
@@ -19,11 +19,12 @@ import { useRouter } from 'next/navigation';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function CreateListingPage() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -165,6 +166,34 @@ export default function CreateListingPage() {
     toast({ title: "Success!", description: "Your listing has been published to the marketplace." });
     router.push('/dashboard');
   };
+
+  if (isUserLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex flex-col items-center justify-center p-4 text-center space-y-6">
+          <div className="bg-muted rounded-full p-6">
+            <Lock className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-black">Login Required</h1>
+            <p className="text-muted-foreground max-w-sm">Please sign in to your AgriLoop account to list your agricultural waste on the marketplace.</p>
+          </div>
+          <Button asChild className="px-10 h-12 font-bold shadow-lg">
+            <Link href="/login">Sign In Now</Link>
+          </Button>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
