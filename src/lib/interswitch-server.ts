@@ -30,7 +30,7 @@ async function getIswAccessToken(): Promise<string> {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${authHeader}`,
       },
-      body: new URLSearchParams({ grant_type: 'client_credentials' }),
+      body: new URLSearchParams({ grant_type: 'client_credentials', scope: 'profile' }),
     });
 
     if (!response.ok) {
@@ -48,10 +48,9 @@ async function getIswAccessToken(): Promise<string> {
 export async function validateBvnBooleanAction(bvn: string) {
   const cleanBvn = bvn.trim();
   
-  // For the hackathon, we prioritize the real API, but keep the test BVN as a safe fallback
-  // if the sandbox is unstable or if specifically testing the success flow.
+  // Test BVN for demo continuity
   if (cleanBvn === "22222222226") {
-    return { valid: true, message: "BVN validated (Demo Mode)" };
+    return { valid: true, message: "BVN validated (Hackathon Demo Mode)" };
   }
 
   try {
@@ -73,7 +72,7 @@ export async function validateBvnBooleanAction(bvn: string) {
       const errorData = await response.json();
       return { 
         valid: false, 
-        message: errorData.message || "Identity service unavailable. Try test BVN 22222222226." 
+        message: errorData.message || "Identity service unavailable. Check your credentials or try test BVN 22222222226." 
       };
     }
 
@@ -93,10 +92,10 @@ export async function getBvnFullDetailsAction(bvn: string) {
 
   if (cleanBvn === "22222222226") {
     return {
-      firstName: "VICTOR",
-      lastName: "OKPE",
-      phone: "08012345678",
-      photo: "https://picsum.photos/seed/victor/200/200",
+      firstName: "HACKATHON",
+      lastName: "PARTNER",
+      phone: "08000000000",
+      photo: "https://picsum.photos/seed/hackathon/200/200",
       valid: true
     };
   }
@@ -119,28 +118,27 @@ export async function getBvnFullDetailsAction(bvn: string) {
     return await response.json();
   } catch (error) {
     console.error('Interswitch Details Error:', error);
-    // Fallback for demo continuity
+    // Fallback for demo continuity if sandbox is unstable
     return {
-      firstName: "VICTOR",
-      lastName: "OKPE",
+      firstName: "DEMO",
+      lastName: "USER",
       phone: "08012345678",
-      photo: "https://picsum.photos/seed/victor/200/200",
+      photo: "https://picsum.photos/seed/demo/200/200",
       valid: true
     };
   }
 }
 
 export async function getCheckoutConfigAction(orderId: string, amount: number, buyerEmail: string, buyerName: string) {
-  // Real Merchant and Pay Item details from .env
-  const merchantCode = process.env.INTERSWITCH_MERCHANT_CODE || "MX60956";
-  const payItemId = process.env.INTERSWITCH_PAY_ITEM_ID || "101";
+  const merchantCode = process.env.INTERSWITCH_MERCHANT_CODE || "MX275936";
+  const payItemId = process.env.INTERSWITCH_PAY_ITEM_ID || "Default_Payable_MX275936";
 
   return {
     merchant_code: merchantCode,
     pay_item_id: payItemId,
     txn_ref: `AGR-${orderId}-${Date.now()}`,
-    amount: Math.round(amount * 100), // Ensure it's an integer for kobo
-    currency: "566",
+    amount: Math.round(amount * 100), // Amount in Kobo
+    currency: "566", // NGN
     cust_email: buyerEmail,
     cust_name: buyerName,
     site_redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/payment/callback`,
