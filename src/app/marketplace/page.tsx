@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import ListingCard from '@/components/marketplace/ListingCard';
 import FilterPanel from '@/components/marketplace/FilterPanel';
+import MapView from '@/components/marketplace/MapView';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Map as MapIcon, Grid as GridIcon, Loader2, Filter } from 'lucide-react';
@@ -10,9 +12,11 @@ import { Listing } from '@/types';
 import { useCollection, useMemoFirebase, useFirebase } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
 
 export default function MarketplacePage() {
   const { firestore } = useFirebase();
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
 
   const activeListingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -52,14 +56,33 @@ export default function MarketplacePage() {
                 </div>
               </SheetContent>
             </Sheet>
-            <Button variant="outline" className="flex items-center gap-2">
-              <MapIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Map View</span>
-            </Button>
-            <Button variant="outline" className="flex items-center gap-2">
-              <GridIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">Grid View</span>
-            </Button>
+            
+            <div className="flex items-center rounded-lg border bg-background p-1 shadow-sm">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className={cn(
+                  "flex items-center gap-2 px-3", 
+                  viewMode === 'grid' && "bg-muted text-primary font-bold"
+                )}
+                onClick={() => setViewMode('grid')}
+              >
+                <GridIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Grid</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className={cn(
+                  "flex items-center gap-2 px-3", 
+                  viewMode === 'map' && "bg-muted text-primary font-bold"
+                )}
+                onClick={() => setViewMode('map')}
+              >
+                <MapIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Map</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -83,11 +106,17 @@ export default function MarketplacePage() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : listings && listings.length > 0 ? (
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {listings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} />
-                ))}
-              </div>
+              <>
+                {viewMode === 'grid' ? (
+                  <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    {listings.map((listing) => (
+                      <ListingCard key={listing.id} listing={listing} />
+                    ))}
+                  </div>
+                ) : (
+                  <MapView listings={listings} />
+                )}
+              </>
             ) : (
               <div className="flex h-64 flex-col items-center justify-center rounded-3xl bg-muted/50 text-center px-4">
                 <p className="text-xl font-bold">No active listings found.</p>
