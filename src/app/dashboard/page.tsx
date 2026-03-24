@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   Package,
   ArrowRight,
-  Loader2
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUser, useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
@@ -55,7 +56,7 @@ export default function DashboardPage() {
 
   const { data: orders, isLoading: ordersLoading } = useCollection<Order>(userOrdersQuery);
 
-  if (isUserLoading || profileLoading) {
+  if (isUserLoading || (user && profileLoading)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -79,6 +80,16 @@ export default function DashboardPage() {
       <Navbar />
       
       <main className="container mx-auto px-4 py-8">
+        {!profile && !profileLoading && (
+          <div className="mb-6 rounded-2xl bg-amber-50 border border-amber-200 p-4 flex items-center gap-4 text-amber-800">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <div className="text-sm">
+              <p className="font-bold">Profile Setup Incomplete</p>
+              <p>We couldn't find your profile data. Please <Link href="/signup" className="underline font-bold">re-register</Link> or contact support if this persists.</p>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-3xl font-black text-foreground">Welcome back, {welcomeName}</h1>

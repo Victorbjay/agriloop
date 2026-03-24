@@ -5,9 +5,8 @@ service cloud.firestore {
     /**
      * AgriLoop Security Rules Strategy
      * 
-     * Core Philosophy:
      * - Users: Private profiles, owner-only access.
-     * - Listings: Publicly readable for marketplace browsing. Only sellers can create/edit their own.
+     * - Listings: Publicly readable for marketplace browsing. Only sellers can manage their own.
      * - Orders: Accessible only to the buyer and the seller involved.
      */
 
@@ -48,10 +47,9 @@ service cloud.firestore {
      * @description Rules for the Orders collection (Transactions).
      */
     match /orders/{orderId} {
-      // Both buyer and seller need to see the order.
-      // We allow reading if the user is either the buyer or the seller.
+      // Allow read if the user is either the buyer or the seller.
+      // We check request.auth.uid against the data in the document.
       allow read: if isSignedIn() && (
-        resource == null || // Allow query planning
         resource.data.buyerId == request.auth.uid || 
         resource.data.sellerId == request.auth.uid
       );
