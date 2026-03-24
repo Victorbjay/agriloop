@@ -6,74 +6,64 @@ service cloud.firestore {
      * AgriLoop Security Rules Strategy
      * 
      * Core Philosophy:
-     * This ruleset enforces a strict user-ownership model for personal profiles and a 
-     * collaborator-based model for transactions (Orders). Marketplace listings are 
-     * publicly readable to facilitate discovery but strictly controlled by the seller 
-     * for modifications.
+     * - Users: Private profiles, owner-only access.
+     * - Listings: Publicly readable for marketplace browsing. Only sellers can create/edit their own.
+     * - Orders: Accessible only to the buyer and the seller involved.
      */
 
     // --- Global Helper Functions ---
 
-    /** Checks if the user is authenticated. */
     function isSignedIn() {
       return request.auth != null;
     }
 
-    /** Checks if the authenticated user's ID matches the provided userId. */
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
-    }
-
-    /** Checks if the user owns the existing document and it exists. */
-    function isExistingOwner(ownerIdField) {
-      return isSignedIn() && resource != null && resource.data[ownerIdField] == request.auth.uid;
     }
 
     // --- Collection Rules ---
 
     /**
-     * @description Rules for the User collection, managing private profiles.
+     * @description Rules for the User collection.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isOwner(userId) && (request.resource.data.id == resource.data.id);
-      allow delete: if isOwner(userId);
+      allow read, write: if isOwner(userId);
     }
 
     /**
      * @description Rules for the Listings collection (Marketplace).
      */
     match /listings/{listingId} {
-      allow get, list: if true;
+      // Allow everyone to browse and read listings
+      allow read: if true;
 
+      // Only signed-in users can create listings, and only for themselves
       allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
-      allow update: if isExistingOwner('sellerId') && (request.resource.data.sellerId == resource.data.sellerId);
-      allow delete: if isExistingOwner('sellerId');
+      
+      // Only the seller can update or delete their own listing
+      allow update, delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
     }
 
     /**
      * @description Rules for the Orders collection (Transactions).
      */
     match /orders/{orderId} {
-      // Both buyer and seller need to see the order for their dashboards.
-      // Rules are not filters: clients MUST query using where('buyerId', '==', uid) or similar.
+      // Both buyer and seller need to see the order.
+      // We allow reading if the user is either the buyer or the seller.
       allow read: if isSignedIn() && (
-        (resource != null && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid)) ||
-        // Support initial empty state queries or metadata lookups
-        (request.query.limit <= 100)
+        resource == null || // Allow query planning
+        resource.data.buyerId == request.auth.uid || 
+        resource.data.sellerId == request.auth.uid
       );
 
       // Only the buyer can initiate an order.
       allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
 
-      // Updates (status changes, timeline updates) can be made by either party.
-      allow update: if isSignedIn() && 
-                    (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid) &&
-                    request.resource.data.buyerId == resource.data.buyerId && 
-                    request.resource.data.sellerId == resource.data.sellerId;
+      // Updates (status changes) can be made by either involved party.
+      allow update: if isSignedIn() && (
+        resource.data.buyerId == request.auth.uid || 
+        resource.data.sellerId == request.auth.uid
+      );
 
       allow delete: if false;
     }
