@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -12,7 +13,9 @@ import {
   Package,
   ArrowRight,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  ShoppingCart,
+  DollarSign
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUser, useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
@@ -24,7 +27,7 @@ export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
 
-  // Fetch user profile for name display
+  // Fetch user profile
   const profileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
@@ -44,8 +47,8 @@ export default function DashboardPage() {
 
   const { data: listings, isLoading: listingsLoading } = useCollection<Listing>(userListingsQuery);
 
-  // Fetch user's orders (as seller)
-  const userOrdersQuery = useMemoFirebase(() => {
+  // Fetch user's sales (orders where user is seller)
+  const salesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'orders'),
@@ -54,7 +57,19 @@ export default function DashboardPage() {
     );
   }, [firestore, user]);
 
-  const { data: orders, isLoading: ordersLoading } = useCollection<Order>(userOrdersQuery);
+  const { data: sales, isLoading: salesLoading } = useCollection<Order>(salesQuery);
+
+  // Fetch user's purchases (orders where user is buyer)
+  const purchasesQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'orders'),
+      where('buyerId', '==', user.uid),
+      limit(20)
+    );
+  }, [firestore, user]);
+
+  const { data: purchases, isLoading: purchasesLoading } = useCollection<Order>(purchasesQuery);
 
   if (isUserLoading || (user && profileLoading)) {
     return (
@@ -109,42 +124,42 @@ export default function DashboardPage() {
         <div className="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
-              <CardTitle className="text-xs sm:text-sm font-medium">Earnings</CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold">₦0</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Start selling to see revenue</p>
+              <div className="text-lg sm:text-2xl font-bold">₦{sales?.reduce((acc, o) => acc + (o.status === 'completed' ? o.totalAmount : 0), 0).toLocaleString() || 0}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Completed sales</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
-              <CardTitle className="text-xs sm:text-sm font-medium">Listings</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">My Listings</CardTitle>
               <Package className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
               <div className="text-lg sm:text-2xl font-bold">{listings?.length || 0}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Live on marketplace</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Active in marketplace</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
-              <CardTitle className="text-xs sm:text-sm font-medium">Orders</CardTitle>
-              <Clock className="h-4 w-4 text-primary" />
+              <CardTitle className="text-xs sm:text-sm font-medium">Buying</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold">{orders?.length || 0}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Recent activity</p>
+              <div className="text-lg sm:text-2xl font-bold">{purchases?.length || 0}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Active purchases</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
-              <CardTitle className="text-xs sm:text-sm font-medium">Status</CardTitle>
+              <CardTitle className="text-xs sm:text-sm font-medium">Trust Rank</CardTitle>
               <ShieldCheck className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <div className="text-lg sm:text-2xl font-bold">{profile?.verificationStatus === 'verified' ? 'Verified' : 'Pending'}</div>
-              <p className="text-[10px] sm:text-xs text-muted-foreground">Safety check</p>
+              <div className="text-lg sm:text-2xl font-bold capitalize">{profile?.badge || 'None'}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Verification status</p>
             </CardContent>
           </Card>
         </div>
@@ -152,9 +167,10 @@ export default function DashboardPage() {
         <Tabs defaultValue="listings" className="w-full">
           <div className="overflow-x-auto pb-2 mb-8">
             <TabsList className="bg-muted/50 inline-flex w-auto min-w-full sm:min-w-0">
-              <TabsTrigger value="listings" className="px-6 sm:px-8 flex-1 sm:flex-none">My Listings</TabsTrigger>
-              <TabsTrigger value="orders" className="px-6 sm:px-8 flex-1 sm:flex-none">Recent Orders</TabsTrigger>
-              <TabsTrigger value="verification" className="px-6 sm:px-8 flex-1 sm:flex-none">Verification</TabsTrigger>
+              <TabsTrigger value="listings" className="px-6 sm:px-8">My Listings</TabsTrigger>
+              <TabsTrigger value="sales" className="px-6 sm:px-8">Sales Activity</TabsTrigger>
+              <TabsTrigger value="purchases" className="px-6 sm:px-8">Purchases</TabsTrigger>
+              <TabsTrigger value="verification" className="px-6 sm:px-8">Verification</TabsTrigger>
             </TabsList>
           </div>
           
@@ -171,7 +187,6 @@ export default function DashboardPage() {
                           alt="Listing" 
                           fill 
                           className="object-cover"
-                          data-ai-hint="waste"
                          />
                       </div>
                       <div className="flex flex-1 flex-col p-6">
@@ -203,7 +218,7 @@ export default function DashboardPage() {
              </div>
           </TabsContent>
 
-          <TabsContent value="orders">
+          <TabsContent value="sales">
              <div className="rounded-xl bg-white shadow-sm overflow-x-auto">
                 <table className="w-full border-collapse min-w-[600px]">
                   <thead>
@@ -211,27 +226,74 @@ export default function DashboardPage() {
                       <th className="py-4 pl-4">Order ID</th>
                       <th className="py-4">Buyer</th>
                       <th className="py-4">Quantity</th>
+                      <th className="py-4">Total</th>
                       <th className="py-4">Status</th>
                       <th className="py-4 pr-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {ordersLoading ? (
-                      <tr><td colSpan={5} className="py-8 text-center"><Loader2 className="mx-auto animate-spin" /></td></tr>
-                    ) : orders && orders.length > 0 ? (
-                      orders.map((order) => (
+                    {salesLoading ? (
+                      <tr><td colSpan={6} className="py-8 text-center"><Loader2 className="mx-auto animate-spin" /></td></tr>
+                    ) : sales && sales.length > 0 ? (
+                      sales.map((order) => (
                         <tr key={order.id} className="border-b last:border-0 hover:bg-muted/10 transition-colors">
                           <td className="py-4 pl-4 font-medium text-xs sm:text-sm">{order.id}</td>
                           <td className="py-4 text-xs sm:text-sm">{order.buyerName}</td>
                           <td className="py-4 text-xs sm:text-sm">{order.quantityKg} kg</td>
+                          <td className="py-4 text-xs sm:text-sm font-bold">₦{order.totalAmount.toLocaleString()}</td>
                           <td className="py-4">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-orange-700">
-                              {order.status}
+                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-orange-700 capitalize">
+                              {order.status.replace('_', ' ')}
                             </span>
                           </td>
                           <td className="py-4 pr-4 text-right">
-                            <Button size="sm" variant="ghost" className="text-primary font-bold h-8 text-xs">
-                              View <ArrowRight className="ml-1 h-3 w-3" />
+                            <Button size="sm" variant="ghost" className="text-primary font-bold h-8 text-xs" asChild>
+                              <Link href={`/orders/${order.id}`}>Manage <ArrowRight className="ml-1 h-3 w-3" /></Link>
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-muted-foreground text-sm">
+                          No sales found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+             </div>
+          </TabsContent>
+
+          <TabsContent value="purchases">
+             <div className="rounded-xl bg-white shadow-sm overflow-x-auto">
+                <table className="w-full border-collapse min-w-[600px]">
+                  <thead>
+                    <tr className="border-b text-left text-xs sm:text-sm font-bold text-muted-foreground">
+                      <th className="py-4 pl-4">Order ID</th>
+                      <th className="py-4">Seller</th>
+                      <th className="py-4">Product</th>
+                      <th className="py-4">Status</th>
+                      <th className="py-4 pr-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {purchasesLoading ? (
+                      <tr><td colSpan={5} className="py-8 text-center"><Loader2 className="mx-auto animate-spin" /></td></tr>
+                    ) : purchases && purchases.length > 0 ? (
+                      purchases.map((order) => (
+                        <tr key={order.id} className="border-b last:border-0 hover:bg-muted/10 transition-colors">
+                          <td className="py-4 pl-4 font-medium text-xs sm:text-sm">{order.id}</td>
+                          <td className="py-4 text-xs sm:text-sm">{order.sellerName}</td>
+                          <td className="py-4 text-xs sm:text-sm">{order.listingSnapshotWasteTypeLabel}</td>
+                          <td className="py-4">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-blue-700 capitalize">
+                              {order.status.replace('_', ' ')}
+                            </span>
+                          </td>
+                          <td className="py-4 pr-4 text-right">
+                            <Button size="sm" variant="ghost" className="text-primary font-bold h-8 text-xs" asChild>
+                              <Link href={`/orders/${order.id}`}>View <ArrowRight className="ml-1 h-3 w-3" /></Link>
                             </Button>
                           </td>
                         </tr>
@@ -239,7 +301,7 @@ export default function DashboardPage() {
                     ) : (
                       <tr>
                         <td colSpan={5} className="py-12 text-center text-muted-foreground text-sm">
-                          No recent orders found.
+                          No purchases found. <Link href="/marketplace" className="text-primary underline">Shop now</Link>
                         </td>
                       </tr>
                     )}

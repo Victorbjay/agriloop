@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import ListingCard from '@/components/marketplace/ListingCard';
 import FilterPanel from '@/components/marketplace/FilterPanel';
@@ -8,7 +9,7 @@ import MapView from '@/components/marketplace/MapView';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Map as MapIcon, Grid as GridIcon, Loader2, Filter } from 'lucide-react';
-import { Listing } from '@/types';
+import { Listing, WasteType } from '@/types';
 import { useCollection, useMemoFirebase, useFirebase } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -17,7 +18,11 @@ import { cn } from '@/lib/utils';
 export default function MarketplacePage() {
   const { firestore } = useFirebase();
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTypes, setSelectedTypes] = useState<WasteType[]>([]);
+  const [maxPrice, setMaxPrice] = useState<number>(1000);
 
+  // Firestore query for active listings
   const activeListingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
@@ -28,6 +33,21 @@ export default function MarketplacePage() {
   }, [firestore]);
 
   const { data: listings, isLoading } = useCollection<Listing>(activeListingsQuery);
+
+  // Client-side filtering for search and complex filters to avoid index requirements for demo
+  const filteredListings = useMemo(() => {
+    if (!listings) return [];
+    return listings.filter(l => {
+      const matchesSearch = !searchQuery || 
+        l.wasteTypeLabel.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        l.locationAddress.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesType = selectedTypes.length === 0 || selectedTypes.includes(l.wasteType);
+      const matchesPrice = l.pricePerKg <= maxPrice;
+
+      return matchesSearch && matchesType && matchesPrice;
+    });
+  }, [listings, searchQuery, selectedTypes, maxPrice]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,7 +72,12 @@ export default function MarketplacePage() {
                   <SheetTitle className="text-2xl font-black">Filters</SheetTitle>
                 </SheetHeader>
                 <div className="py-6">
-                  <FilterPanel />
+                  <FilterPanel 
+                    selectedTypes={selectedTypes} 
+                    onTypeChange={setSelectedTypes}
+                    maxPrice={maxPrice}
+                    onPriceChange={setMaxPrice}
+                  />
                 </div>
               </SheetContent>
             </Sheet>
@@ -88,7 +113,12 @@ export default function MarketplacePage() {
 
         <div className="grid gap-8 lg:grid-cols-[280px_1fr]">
           <aside className="hidden lg:block">
-            <FilterPanel />
+            <FilterPanel 
+              selectedTypes={selectedTypes} 
+              onTypeChange={setSelectedTypes}
+              maxPrice={maxPrice}
+              onPriceChange={setMaxPrice}
+            />
           </aside>
 
           <div className="space-y-6">
@@ -97,6 +127,8 @@ export default function MarketplacePage() {
               <Input 
                 placeholder="Search waste type, location..." 
                 className="h-12 pl-10 pr-24 shadow-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Button className="absolute right-1 h-10 px-6">Search</Button>
             </div>
@@ -105,21 +137,21 @@ export default function MarketplacePage() {
               <div className="flex h-64 items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
-            ) : listings && listings.length > 0 ? (
+            ) : filteredListings.length > 0 ? (
               <>
                 {viewMode === 'grid' ? (
                   <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                    {listings.map((listing) => (
+                    {filteredListings.map((listing) => (
                       <ListingCard key={listing.id} listing={listing} />
                     ))}
                   </div>
                 ) : (
-                  <MapView listings={listings} />
+                  <MapView listings={filteredListings} />
                 )}
               </>
             ) : (
               <div className="flex h-64 flex-col items-center justify-center rounded-3xl bg-muted/50 text-center px-4">
-                <p className="text-xl font-bold">No active listings found.</p>
+                <p className="text-xl font-bold">No results found.</p>
                 <p className="text-muted-foreground">Try adjusting your filters or search terms.</p>
               </div>
             )}
