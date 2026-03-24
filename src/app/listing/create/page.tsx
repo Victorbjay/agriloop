@@ -127,7 +127,6 @@ export default function CreateListingPage() {
     
     const typeLabel = WASTE_TYPES.find(t => t.value === formData.wasteType)?.label || '';
     
-    // Use uploaded image or fallback to relevant placeholder
     let images: string[] = [];
     if (previewImage) {
       images = [previewImage];
@@ -186,7 +185,6 @@ export default function CreateListingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Image Upload Section */}
                 <div className="space-y-2">
                   <Label>Product Photo</Label>
                   <div 

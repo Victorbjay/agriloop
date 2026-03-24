@@ -2,16 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * AgriLoop Security Rules Strategy
-     * 
-     * - Users: Private profiles, owner-only access.
-     * - Listings: Publicly readable for marketplace browsing. Only sellers can manage their own.
-     * - Orders: Accessible only to the buyer and the seller involved.
-     */
-
-    // --- Global Helper Functions ---
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -20,48 +10,26 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- Collection Rules ---
-
-    /**
-     * @description Rules for the User collection.
-     */
     match /users/{userId} {
       allow read, write: if isOwner(userId);
     }
 
-    /**
-     * @description Rules for the Listings collection (Marketplace).
-     */
     match /listings/{listingId} {
-      // Allow everyone to browse and read listings
       allow read: if true;
-
-      // Only signed-in users can create listings, and only for themselves
       allow create: if isSignedIn() && request.resource.data.sellerId == request.auth.uid;
-      
-      // Only the seller can update or delete their own listing
       allow update, delete: if isSignedIn() && resource.data.sellerId == request.auth.uid;
     }
 
-    /**
-     * @description Rules for the Orders collection (Transactions).
-     */
     match /orders/{orderId} {
-      // Allow read if the user is either the buyer or the seller.
       allow read: if isSignedIn() && (
         resource.data.buyerId == request.auth.uid || 
         resource.data.sellerId == request.auth.uid
       );
-
-      // Only the buyer can initiate an order.
       allow create: if isSignedIn() && request.resource.data.buyerId == request.auth.uid;
-
-      // Updates (status changes) can be made by either involved party.
       allow update: if isSignedIn() && (
         resource.data.buyerId == request.auth.uid || 
         resource.data.sellerId == request.auth.uid
       );
-
       allow delete: if false;
     }
   }
