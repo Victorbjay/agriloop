@@ -1,4 +1,3 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -9,8 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WASTE_TYPES, WASTE_CONDITIONS, QUALITY_GRADES } from '@/lib/constants';
-import { Sparkles, Loader2, MapPin, Package, TrendingUp } from 'lucide-react';
-import { useState } from 'react';
+import { Sparkles, Loader2, MapPin, Package, TrendingUp, Camera, X } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { generateListingDescription } from '@/ai/flows/ai-listing-description-generator';
 import { aiWasteValorizationSuggestion } from '@/ai/flows/ai-waste-valorization-suggestion';
 import { useToast } from '@/hooks/use-toast';
@@ -19,14 +18,18 @@ import { collection, doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Image from 'next/image';
 
 export default function CreateListingPage() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const { user } = useUser();
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     wasteType: '' as any,
@@ -40,6 +43,26 @@ export default function CreateListingPage() {
   });
 
   const [suggestions, setSuggestions] = useState<any>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ 
+          variant: "destructive", 
+          title: "File too large", 
+          description: "Please select an image smaller than 2MB." 
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleAiDescription = async () => {
     if (!formData.wasteType || !formData.quantityKg) {
@@ -104,9 +127,14 @@ export default function CreateListingPage() {
     
     const typeLabel = WASTE_TYPES.find(t => t.value === formData.wasteType)?.label || '';
     
-    // Find relevant placeholder image
-    const placeholder = PlaceHolderImages.find(img => img.id === formData.wasteType);
-    const images = placeholder ? [placeholder.imageUrl] : [`https://picsum.photos/seed/${newListingId}/800/600`];
+    // Use uploaded image or fallback to relevant placeholder
+    let images: string[] = [];
+    if (previewImage) {
+      images = [previewImage];
+    } else {
+      const placeholder = PlaceHolderImages.find(img => img.id === formData.wasteType);
+      images = placeholder ? [placeholder.imageUrl] : [`https://picsum.photos/seed/${newListingId}/800/600`];
+    }
 
     const listingData = {
       id: newListingId,
@@ -158,6 +186,50 @@ export default function CreateListingPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Image Upload Section */}
+                <div className="space-y-2">
+                  <Label>Product Photo</Label>
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="relative flex aspect-video w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-muted-foreground/25 bg-muted/50 transition-colors hover:bg-muted/80"
+                  >
+                    {previewImage ? (
+                      <>
+                        <Image 
+                          src={previewImage} 
+                          alt="Preview" 
+                          fill 
+                          className="rounded-2xl object-cover" 
+                        />
+                        <Button 
+                          size="icon" 
+                          variant="destructive" 
+                          className="absolute right-2 top-2 h-8 w-8 rounded-full shadow-lg"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImage(null);
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Camera className="h-10 w-10 opacity-50" />
+                        <p className="text-sm font-bold">Click to upload your own photo</p>
+                        <p className="text-xs">Max 2MB. JPG, PNG formats.</p>
+                      </div>
+                    )}
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Waste Type</Label>
