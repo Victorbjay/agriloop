@@ -92,11 +92,11 @@ export default function DashboardPage() {
 
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-black text-foreground">Welcome back, {welcomeName}</h1>
-            <p className="text-muted-foreground">Your account is currently <span className="font-bold text-primary">Active</span>.</p>
+            <h1 className="text-2xl font-black text-foreground sm:text-3xl">Welcome back, {welcomeName}</h1>
+            <p className="text-sm text-muted-foreground sm:text-base">Your account is currently <span className="font-bold text-primary">Active</span>.</p>
           </div>
           <div className="flex gap-2">
-            <Button className="flex items-center gap-2" asChild>
+            <Button className="flex items-center gap-2 w-full sm:w-auto" asChild>
               <Link href="/listing/create">
                 <Plus className="h-4 w-4" />
                 New Listing
@@ -106,55 +106,57 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Section */}
-        <div className="mb-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
           <Card className="border-none shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Earnings</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium">Earnings</CardTitle>
               <TrendingUp className="h-4 w-4 text-primary" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₦0</div>
-              <p className="text-xs text-muted-foreground">Start selling to see revenue</p>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="text-lg sm:text-2xl font-bold">₦0</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Start selling to see revenue</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Total Listings</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium">Listings</CardTitle>
               <Package className="h-4 w-4 text-accent" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{listings?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">Live on marketplace</p>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="text-lg sm:text-2xl font-bold">{listings?.length || 0}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Live on marketplace</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Orders</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium">Orders</CardTitle>
               <Clock className="h-4 w-4 text-primary" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{orders?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">Recent transactions</p>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="text-lg sm:text-2xl font-bold">{orders?.length || 0}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Recent activity</p>
             </CardContent>
           </Card>
           <Card className="border-none shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Verification</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
+              <CardTitle className="text-xs sm:text-sm font-medium">Status</CardTitle>
               <ShieldCheck className="h-4 w-4 text-primary" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{profile?.verificationStatus === 'verified' ? 'Verified' : 'Pending'}</div>
-              <p className="text-xs text-muted-foreground">Complete your profile</p>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <div className="text-lg sm:text-2xl font-bold">{profile?.verificationStatus === 'verified' ? 'Verified' : 'Pending'}</div>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">Safety check</p>
             </CardContent>
           </Card>
         </div>
 
         <Tabs defaultValue="listings" className="w-full">
-          <TabsList className="mb-8 bg-muted/50">
-            <TabsTrigger value="listings" className="px-8">My Listings</TabsTrigger>
-            <TabsTrigger value="orders" className="px-8">Recent Orders</TabsTrigger>
-            <TabsTrigger value="verification" className="px-8">Verification</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto pb-2 mb-8">
+            <TabsList className="bg-muted/50 inline-flex w-auto min-w-full sm:min-w-0">
+              <TabsTrigger value="listings" className="px-6 sm:px-8 flex-1 sm:flex-none">My Listings</TabsTrigger>
+              <TabsTrigger value="orders" className="px-6 sm:px-8 flex-1 sm:flex-none">Recent Orders</TabsTrigger>
+              <TabsTrigger value="verification" className="px-6 sm:px-8 flex-1 sm:flex-none">Verification</TabsTrigger>
+            </TabsList>
+          </div>
           
           <TabsContent value="listings">
              <div className="grid gap-6">
@@ -173,27 +175,27 @@ export default function DashboardPage() {
                          />
                       </div>
                       <div className="flex flex-1 flex-col p-6">
-                         <div className="mb-4 flex items-center justify-between">
+                         <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div>
                               <h3 className="text-xl font-bold">{item.wasteTypeLabel} ({item.condition})</h3>
-                              <p className="text-sm text-muted-foreground">ID: {item.id}</p>
+                              <p className="text-xs text-muted-foreground">ID: {item.id}</p>
                             </div>
-                            <div className="text-right">
+                            <div className="sm:text-right">
                               <p className="text-lg font-black text-primary">₦{item.pricePerKg}/kg</p>
                               <p className="text-xs text-muted-foreground">{item.quantityKg}kg available</p>
                             </div>
                          </div>
-                         <div className="mt-auto flex gap-2">
-                            <Button size="sm" variant="outline" asChild>
+                         <div className="mt-auto flex gap-2 pt-4">
+                            <Button size="sm" variant="outline" className="flex-1 sm:flex-none" asChild>
                               <Link href={`/marketplace/${item.id}`}>View</Link>
                             </Button>
-                            <Button size="sm" variant="outline">Edit</Button>
+                            <Button size="sm" variant="outline" className="flex-1 sm:flex-none">Edit</Button>
                          </div>
                       </div>
                     </Card>
                   ))
                 ) : (
-                  <div className="rounded-3xl bg-muted/30 py-16 text-center">
+                  <div className="rounded-3xl bg-muted/30 py-16 text-center px-4">
                     <p className="text-lg font-bold">You haven't posted any listings yet.</p>
                     <Button className="mt-4" asChild><Link href="/listing/create">Create Your First Listing</Link></Button>
                   </div>
@@ -202,15 +204,15 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="orders">
-             <div className="rounded-xl bg-white p-4 shadow-sm overflow-hidden">
-                <table className="w-full border-collapse">
+             <div className="rounded-xl bg-white shadow-sm overflow-x-auto">
+                <table className="w-full border-collapse min-w-[600px]">
                   <thead>
-                    <tr className="border-b text-left text-sm font-bold text-muted-foreground">
-                      <th className="pb-4 pl-4">Order ID</th>
-                      <th className="pb-4">Buyer</th>
-                      <th className="pb-4">Quantity</th>
-                      <th className="pb-4">Status</th>
-                      <th className="pb-4 pr-4 text-right">Action</th>
+                    <tr className="border-b text-left text-xs sm:text-sm font-bold text-muted-foreground">
+                      <th className="py-4 pl-4">Order ID</th>
+                      <th className="py-4">Buyer</th>
+                      <th className="py-4">Quantity</th>
+                      <th className="py-4">Status</th>
+                      <th className="py-4 pr-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -219,16 +221,16 @@ export default function DashboardPage() {
                     ) : orders && orders.length > 0 ? (
                       orders.map((order) => (
                         <tr key={order.id} className="border-b last:border-0 hover:bg-muted/10 transition-colors">
-                          <td className="py-6 pl-4 font-medium">{order.id}</td>
-                          <td className="py-6">{order.buyerName}</td>
-                          <td className="py-6">{order.quantityKg} kg</td>
-                          <td className="py-6">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
+                          <td className="py-4 pl-4 font-medium text-xs sm:text-sm">{order.id}</td>
+                          <td className="py-4 text-xs sm:text-sm">{order.buyerName}</td>
+                          <td className="py-4 text-xs sm:text-sm">{order.quantityKg} kg</td>
+                          <td className="py-4">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-bold text-orange-700">
                               {order.status}
                             </span>
                           </td>
-                          <td className="py-6 pr-4 text-right">
-                            <Button size="sm" variant="ghost" className="text-primary font-bold">
+                          <td className="py-4 pr-4 text-right">
+                            <Button size="sm" variant="ghost" className="text-primary font-bold h-8 text-xs">
                               View <ArrowRight className="ml-1 h-3 w-3" />
                             </Button>
                           </td>
@@ -236,7 +238,7 @@ export default function DashboardPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="py-12 text-center text-muted-foreground">
+                        <td colSpan={5} className="py-12 text-center text-muted-foreground text-sm">
                           No recent orders found.
                         </td>
                       </tr>
@@ -251,14 +253,14 @@ export default function DashboardPage() {
               <CardContent className="p-8">
                  <div className="flex flex-col items-center text-center space-y-6">
                     <div className="rounded-full bg-muted p-6">
-                      <ShieldCheck className="h-16 w-16 text-muted-foreground" />
+                      <ShieldCheck className="h-12 w-12 sm:h-16 sm:w-16 text-muted-foreground" />
                     </div>
                     <div className="space-y-2">
-                      <h2 className="text-2xl font-black">{profile?.verificationStatus === 'verified' ? 'Verification Complete' : 'Verification Pending'}</h2>
-                      <p className="max-w-md text-muted-foreground">To trade at higher volumes and earn trust badges, please complete your BVN and CAC verification.</p>
+                      <h2 className="text-xl sm:text-2xl font-black">{profile?.verificationStatus === 'verified' ? 'Verification Complete' : 'Verification Pending'}</h2>
+                      <p className="max-w-md text-sm sm:text-base text-muted-foreground">To trade at higher volumes and earn trust badges, please complete your BVN and CAC verification.</p>
                     </div>
                     {profile?.verificationStatus !== 'verified' && (
-                      <Button className="font-bold px-10">Start Verification</Button>
+                      <Button className="font-bold px-10 w-full sm:w-auto">Start Verification</Button>
                     )}
                  </div>
               </CardContent>
