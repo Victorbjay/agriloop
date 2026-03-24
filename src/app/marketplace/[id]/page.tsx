@@ -21,7 +21,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useFirebase, useUser } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
-import { Listing } from '@/types';
+import { Listing, UserProfile } from '@/types';
 import { useMemoFirebase } from '@/firebase/provider';
 import { initiateInterswitchPayment } from '@/lib/interswitch';
 import { useState } from 'react';
@@ -43,6 +43,38 @@ export default function ListingDetailPage() {
 
   const { data: listing, isLoading } = useDoc<Listing>(listingRef);
 
+  // Fetch seller profile to get contact details
+  const sellerRef = useMemoFirebase(() => {
+    if (!firestore || !listing?.sellerId) return null;
+    return doc(firestore, 'users', listing.sellerId);
+  }, [firestore, listing?.sellerId]);
+
+  const { data: sellerProfile } = useDoc<UserProfile>(sellerRef);
+
+  const handleCall = () => {
+    if (sellerProfile?.phone) {
+      window.location.href = `tel:${sellerProfile.phone}`;
+    } else {
+      toast({
+        title: "Phone Unavailable",
+        description: "This seller hasn't provided a phone number yet.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleMessage = () => {
+    if (sellerProfile?.email) {
+      window.location.href = `mailto:${sellerProfile.email}?subject=Inquiry regarding ${listing?.wasteTypeLabel} listing on AgriLoop`;
+    } else {
+      toast({
+        title: "Email Unavailable",
+        description: "This seller hasn't provided a contact email yet.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleCheckout = async () => {
     if (!user) {
       toast({ title: "Login Required", description: "Please log in to purchase listings." });
@@ -55,7 +87,7 @@ export default function ListingDetailPage() {
     setCheckoutLoading(true);
     try {
       // Simulate Interswitch Redirect
-      const redirectUrl = await initiateInterswitchPayment(
+      await initiateInterswitchPayment(
         listing.id,
         listing.totalPrice,
         user.email || 'customer@example.com'
@@ -92,7 +124,7 @@ export default function ListingDetailPage() {
         pickupLocationAddress: listing.locationAddress,
         pickupLocationLatitude: 6.5244,
         pickupLocationLongitude: 3.3792,
-        pickupLocationContactPhone: '08012345678',
+        pickupLocationContactPhone: sellerProfile?.phone || '08012345678',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -218,10 +250,22 @@ export default function ListingDetailPage() {
               >
                 {checkoutLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Proceed to Checkout"}
               </Button>
-              <Button size="icon" variant="outline" className="h-14 w-14 rounded-xl">
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="h-14 w-14 rounded-xl transition-all hover:bg-primary hover:text-white"
+                onClick={handleMessage}
+                title="Send Email"
+              >
                 <MessageSquare className="h-6 w-6" />
               </Button>
-              <Button size="icon" variant="outline" className="h-14 w-14 rounded-xl">
+              <Button 
+                size="icon" 
+                variant="outline" 
+                className="h-14 w-14 rounded-xl transition-all hover:bg-primary hover:text-white"
+                onClick={handleCall}
+                title="Call Seller"
+              >
                 <Phone className="h-6 w-6" />
               </Button>
             </div>
