@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Map as MapIcon, Grid as GridIcon, Loader2, Filter } from 'lucide-react';
 import { Listing, WasteType } from '@/types';
 import { useCollection, useMemoFirebase, useFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
@@ -20,33 +20,37 @@ export default function MarketplacePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<WasteType[]>([]);
-  const [maxPrice, setMaxPrice] = useState<number>(1000);
+  const [maxPrice, setMaxPrice] = useState<number>(5000); // Increased default price range
 
-  // Firestore query for active listings
+  // Simplified query: remove orderBy to avoid index requirements for prototype
   const activeListingsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'listings'),
-      where('status', '==', 'active'),
-      orderBy('createdAt', 'desc')
+      where('status', '==', 'active')
     );
   }, [firestore]);
 
   const { data: listings, isLoading } = useCollection<Listing>(activeListingsQuery);
 
-  // Client-side filtering for search and complex filters to avoid index requirements for demo
+  // Client-side filtering and sorting
   const filteredListings = useMemo(() => {
     if (!listings) return [];
-    return listings.filter(l => {
-      const matchesSearch = !searchQuery || 
-        l.wasteTypeLabel.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        l.locationAddress.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesType = selectedTypes.length === 0 || selectedTypes.includes(l.wasteType);
-      const matchesPrice = l.pricePerKg <= maxPrice;
+    
+    return listings
+      .filter(l => {
+        const matchesSearch = !searchQuery || 
+          l.wasteTypeLabel.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          l.locationAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          l.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesType = selectedTypes.length === 0 || selectedTypes.includes(l.wasteType);
+        const matchesPrice = l.pricePerKg <= maxPrice;
 
-      return matchesSearch && matchesType && matchesPrice;
-    });
+        return matchesSearch && matchesType && matchesPrice;
+      })
+      // Sort client-side by createdAt descending
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [listings, searchQuery, selectedTypes, maxPrice]);
 
   return (

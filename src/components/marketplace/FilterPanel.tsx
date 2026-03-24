@@ -18,7 +18,7 @@ interface FilterPanelProps {
 export default function FilterPanel({ 
   selectedTypes = [], 
   onTypeChange, 
-  maxPrice = 1000, 
+  maxPrice = 5000, 
   onPriceChange 
 }: FilterPanelProps) {
   
@@ -61,8 +61,8 @@ export default function FilterPanel({
         <Slider 
           value={[maxPrice]} 
           onValueChange={(val) => onPriceChange?.(val[0])}
-          max={1000} 
-          step={10} 
+          max={5000} 
+          step={50} 
           className="py-4" 
         />
         <div className="flex justify-between text-xs font-medium text-muted-foreground">
