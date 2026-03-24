@@ -14,19 +14,26 @@ import {
   MessageSquare,
   Package,
   Info,
-  Loader2
+  Loader2,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useFirebase, useUser } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
-import { Listing, UserProfile } from '@/types';
+import { Listing, UserProfile, OrderStatus } from '@/types';
 import { useMemoFirebase } from '@/firebase/provider';
-import { initiateInterswitchPayment } from '@/lib/interswitch';
+import { getCheckoutConfig, INTERSWITCH_CONFIG } from '@/lib/interswitch';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
+declare global {
+  interface Window {
+    webpayCheckout: (config: any) => void;
+  }
+}
 
 export default function ListingDetailPage() {
   const { id } = useParams();
@@ -43,7 +50,6 @@ export default function ListingDetailPage() {
 
   const { data: listing, isLoading } = useDoc<Listing>(listingRef);
 
-  // Fetch seller profile to get contact details
   const sellerRef = useMemoFirebase(() => {
     if (!firestore || !listing?.sellerId) return null;
     return doc(firestore, 'users', listing.sellerId);
@@ -51,27 +57,26 @@ export default function ListingDetailPage() {
 
   const { data: sellerProfile } = useDoc<UserProfile>(sellerRef);
 
-  const handleCall = () => {
-    if (sellerProfile?.phone) {
-      window.location.href = `tel:${sellerProfile.phone}`;
-    } else {
-      toast({
-        title: "Phone Unavailable",
-        description: "This seller hasn't provided a phone number yet.",
-        variant: "destructive"
+  const handlePayment = (response: any, orderId: string, orderData: any) => {
+    if (response && response.resp === "00") {
+      toast({ title: "Payment Successful", description: "Verifying transaction..." });
+      
+      // Update order status to 'payment_held'
+      const ordersRef = collection(firestore, 'orders');
+      addDocumentNonBlocking(ordersRef, {
+        ...orderData,
+        id: orderId,
+        status: 'payment_held' as OrderStatus,
+        interswitchRef: response.payRef || 'TBD',
+        transactionRef: response.txnRef || 'TBD',
+        paymentPaidAt: new Date().toISOString(),
+        paymentVerifiedAt: new Date().toISOString(),
       });
-    }
-  };
 
-  const handleMessage = () => {
-    if (sellerProfile?.email) {
-      window.location.href = `mailto:${sellerProfile.email}?subject=Inquiry regarding ${listing?.wasteTypeLabel} listing on AgriLoop`;
+      router.push('/payment/callback');
     } else {
-      toast({
-        title: "Email Unavailable",
-        description: "This seller hasn't provided a contact email yet.",
-        variant: "destructive"
-      });
+      toast({ variant: "destructive", title: "Payment Failed", description: "Transaction was not completed." });
+      setCheckoutLoading(false);
     }
   };
 
@@ -85,62 +90,50 @@ export default function ListingDetailPage() {
     if (!listing) return;
 
     setCheckoutLoading(true);
-    try {
-      // Simulate Interswitch Redirect
-      await initiateInterswitchPayment(
-        listing.id,
-        listing.totalPrice,
-        user.email || 'customer@example.com'
-      );
-      
-      // For demo, we create the order immediately
-      const ordersRef = collection(firestore, 'orders');
-      const orderId = `ORD-${Date.now()}`;
-      const orderData = {
-        id: orderId,
-        listingId: listing.id,
-        listingSnapshotId: listing.id,
-        listingSnapshotWasteType: listing.wasteType,
-        listingSnapshotWasteTypeLabel: listing.wasteTypeLabel,
-        listingSnapshotCondition: listing.condition,
-        listingSnapshotPricePerKg: listing.pricePerKg,
-        listingSnapshotMoqKg: listing.moqKg,
-        listingSnapshotQualityGrade: listing.qualityGrade,
-        listingSnapshotAvailableFrom: listing.availableFrom,
-        buyerId: user.uid,
-        buyerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Buyer',
-        sellerId: listing.sellerId,
-        sellerName: listing.sellerName,
-        quantityKg: listing.quantityKg,
-        pricePerKg: listing.pricePerKg,
-        totalAmount: listing.totalPrice,
-        deliveryMethod: 'self_pickup',
-        status: 'pending_payment',
-        interswitchRef: 'TBD',
-        transactionRef: 'TBD',
-        paymentPaidAt: new Date().toISOString(),
-        paymentVerifiedAt: new Date().toISOString(),
-        timelineOrderedAt: new Date().toISOString(),
-        pickupLocationAddress: listing.locationAddress,
-        pickupLocationLatitude: 6.5244,
-        pickupLocationLongitude: 3.3792,
-        pickupLocationContactPhone: sellerProfile?.phone || '08012345678',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+    
+    const orderId = `ORD-${Date.now()}`;
+    const orderData = {
+      listingId: listing.id,
+      listingSnapshotId: listing.id,
+      listingSnapshotWasteType: listing.wasteType,
+      listingSnapshotWasteTypeLabel: listing.wasteTypeLabel,
+      listingSnapshotCondition: listing.condition,
+      listingSnapshotPricePerKg: listing.pricePerKg,
+      listingSnapshotMoqKg: listing.moqKg,
+      listingSnapshotQualityGrade: listing.qualityGrade,
+      listingSnapshotAvailableFrom: listing.availableFrom,
+      buyerId: user.uid,
+      buyerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Buyer',
+      sellerId: listing.sellerId,
+      sellerName: listing.sellerName,
+      quantityKg: listing.quantityKg,
+      pricePerKg: listing.pricePerKg,
+      totalAmount: listing.totalPrice,
+      deliveryMethod: 'self_pickup',
+      status: 'pending_payment' as OrderStatus,
+      pickupLocationAddress: listing.locationAddress,
+      pickupLocationLatitude: 6.5244,
+      pickupLocationLongitude: 3.3792,
+      pickupLocationContactPhone: sellerProfile?.phone || '08012345678',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
 
-      // Use non-blocking update
-      addDocumentNonBlocking(ordersRef, orderData);
-      
-      toast({ title: "Redirecting...", description: "Connecting to Interswitch Secure Checkout." });
-      
-      // Simulate redirect
-      setTimeout(() => {
-        window.location.href = '/payment/callback';
-      }, 1500);
-      
-    } catch (error) {
-      toast({ variant: "destructive", title: "Error", description: "Could not initiate payment." });
+    const config = getCheckoutConfig(
+      orderId, 
+      listing.totalPrice, 
+      user.email || 'customer@example.com',
+      user.displayName || 'Customer'
+    );
+
+    // Trigger Interswitch Inline Checkout
+    if (window.webpayCheckout) {
+      window.webpayCheckout({
+        ...config,
+        onComplete: (response: any) => handlePayment(response, orderId, orderData)
+      });
+    } else {
+      toast({ variant: "destructive", title: "Checkout Error", description: "Payment gateway is loading. Please try again in a moment." });
       setCheckoutLoading(false);
     }
   };
@@ -182,7 +175,6 @@ export default function ListingDetailPage() {
                 alt={listing.wasteTypeLabel} 
                 fill 
                 className="object-cover"
-                data-ai-hint="agricultural waste"
               />
             </div>
           </div>
@@ -248,25 +240,7 @@ export default function ListingDetailPage() {
                 onClick={handleCheckout}
                 disabled={checkoutLoading}
               >
-                {checkoutLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Proceed to Checkout"}
-              </Button>
-              <Button 
-                size="icon" 
-                variant="outline" 
-                className="h-14 w-14 rounded-xl transition-all hover:bg-primary hover:text-white"
-                onClick={handleMessage}
-                title="Send Email"
-              >
-                <MessageSquare className="h-6 w-6" />
-              </Button>
-              <Button 
-                size="icon" 
-                variant="outline" 
-                className="h-14 w-14 rounded-xl transition-all hover:bg-primary hover:text-white"
-                onClick={handleCall}
-                title="Call Seller"
-              >
-                <Phone className="h-6 w-6" />
+                {checkoutLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><CreditCard className="mr-2 h-5 w-5" /> Pay Now</>}
               </Button>
             </div>
 

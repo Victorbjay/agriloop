@@ -2,6 +2,7 @@ import type {Metadata} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'AgriLoop | Agricultural Waste Marketplace',
@@ -25,6 +26,11 @@ export default function RootLayout({
           {children}
           <Toaster />
         </FirebaseClientProvider>
+        {/* Interswitch Inline Checkout SDK */}
+        <Script 
+          src="https://newwebpay.qa.interswitchng.com/inline-checkout.js" 
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );
