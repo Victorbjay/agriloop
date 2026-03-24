@@ -52,7 +52,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
         <div className="space-y-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 shrink-0 text-primary" />
-            <span className="line-clamp-1">{listing.location.address}</span>
+            <span className="line-clamp-1">{listing.locationAddress}</span>
           </div>
           <div className="flex items-center gap-2">
             <Scale className="h-4 w-4 shrink-0 text-primary" />
