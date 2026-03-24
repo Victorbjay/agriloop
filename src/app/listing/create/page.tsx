@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -17,6 +18,7 @@ import { useFirebase, useUser } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function CreateListingPage() {
   const { toast } = useToast();
@@ -102,6 +104,10 @@ export default function CreateListingPage() {
     
     const typeLabel = WASTE_TYPES.find(t => t.value === formData.wasteType)?.label || '';
     
+    // Find relevant placeholder image
+    const placeholder = PlaceHolderImages.find(img => img.id === formData.wasteType);
+    const images = placeholder ? [placeholder.imageUrl] : [`https://picsum.photos/seed/${newListingId}/800/600`];
+
     const listingData = {
       id: newListingId,
       sellerId: user.uid,
@@ -121,6 +127,7 @@ export default function CreateListingPage() {
       locationLongitude: 3.3792,
       locationGeohash: 's1',
       description: formData.description,
+      images: images,
       status: 'active',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

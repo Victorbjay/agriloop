@@ -19,10 +19,34 @@
       "imageHint": "maize stalks"
     },
     {
-      "id": "palm_kernel",
+      "id": "palm_kernel_shells",
       "description": "Palm Kernel Shells",
       "imageUrl": "https://picsum.photos/seed/palm/800/600",
       "imageHint": "palm kernel"
+    },
+    {
+      "id": "cocoa_pods",
+      "description": "Cocoa Pods",
+      "imageUrl": "https://picsum.photos/seed/cocoa/800/600",
+      "imageHint": "cocoa pods"
+    },
+    {
+      "id": "poultry_manure",
+      "description": "Poultry Manure",
+      "imageUrl": "https://picsum.photos/seed/poultry/800/600",
+      "imageHint": "poultry manure"
+    },
+    {
+      "id": "cow_dung",
+      "description": "Cow Dung",
+      "imageUrl": "https://picsum.photos/seed/dung/800/600",
+      "imageHint": "cow dung"
+    },
+    {
+      "id": "sawdust",
+      "description": "Sawdust pile",
+      "imageUrl": "https://picsum.photos/seed/sawdust/800/600",
+      "imageHint": "sawdust"
     }
   ]
 }
