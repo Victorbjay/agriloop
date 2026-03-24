@@ -5,7 +5,7 @@ import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Leaf, Loader2, Sprout, Factory, CheckCircle2 } from 'lucide-react';
+import { Leaf, Loader2, Sprout, Factory, CheckCircle2, ShieldCheck, Agriculture, BusinessCenter } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
@@ -185,9 +185,9 @@ export default function LoginPage() {
 
             {/* Legal Footer */}
             <footer className="pt-12 flex justify-center gap-6">
-              <a className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="#">Privacy</a>
-              <a className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="#">Terms</a>
-              <a className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="#">Support</a>
+              <Link className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="/privacy">Privacy</Link>
+              <Link className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="/terms">Terms</Link>
+              <Link className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="mailto:support@agriloop.com">Support</Link>
             </footer>
           </div>
         </section>

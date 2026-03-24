@@ -1,8 +1,10 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 import Script from 'next/script';
+import Footer from '@/components/layout/Footer';
 
 export const metadata: Metadata = {
   title: 'AgriLoop | Agricultural Waste Marketplace',
@@ -19,11 +21,14 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-body antialiased">
+      <body className="font-body antialiased flex flex-col min-h-screen">
         <FirebaseClientProvider>
-          {children}
+          <div className="flex-grow flex flex-col">
+            {children}
+          </div>
+          <Footer />
           <Toaster />
         </FirebaseClientProvider>
         {/* Interswitch Inline Checkout SDK */}
