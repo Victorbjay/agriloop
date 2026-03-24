@@ -89,7 +89,6 @@ export default function SignupPage() {
     try {
       const result = await checkBvnBoolean(trimmedBvn);
       if (result.valid) {
-        // Pre-fetch full details for auto-fill in identity check
         const details = await getBvnFullDetails(trimmedBvn);
         setBvnData(details);
         setStep('IDENTITY_CHECK');
@@ -110,7 +109,6 @@ export default function SignupPage() {
     const bvnFirstName = bvnData.firstName.toLowerCase().trim();
     const bvnLastName = bvnData.lastName.toLowerCase().trim();
 
-    // Flexible matching: check if both names are present in some order
     const isMatch = inputName.includes(bvnFirstName) && inputName.includes(bvnLastName);
 
     if (isMatch) {
@@ -241,9 +239,14 @@ export default function SignupPage() {
                       onChange={(e) => setFormData({...formData, password: e.target.value})}
                     />
                   </div>
-                  <Button type="submit" className="w-full font-bold h-11">
-                    Continue <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
+                  <div className="space-y-4">
+                    <Button type="submit" className="w-full font-bold h-11">
+                      Continue <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                    <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
+                      By signing up, you agree to our <Link href="/terms" className="underline hover:text-primary">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link>.
+                    </p>
+                  </div>
                 </form>
 
                 <div className="relative">

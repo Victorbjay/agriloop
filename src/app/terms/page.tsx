@@ -1,4 +1,3 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -7,12 +6,8 @@ import {
   Gavel, 
   ShoppingCart, 
   ShieldCheck, 
-  Clock, 
-  ArrowRight,
-  Printer,
   FileText
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function TermsPage() {
   return (
@@ -33,7 +28,7 @@ export default function TermsPage() {
                   Terms of Service
                 </h1>
                 <p className="text-lg text-muted-foreground font-medium max-w-2xl leading-relaxed">
-                  Effective as of June 14, 2024. These terms govern your access to the AgriLoop Global Commodities Exchange and waste management ecosystem.
+                  Effective as of June 14, 2024. These terms govern your access to and use of the AgriLoop Global Commodities Exchange and waste management ecosystem.
                 </p>
               </div>
               <Card className="p-6 bg-muted/30 border-none shadow-none flex items-center gap-4">
@@ -79,7 +74,7 @@ export default function TermsPage() {
                 </div>
                 <div className="space-y-6 text-lg text-muted-foreground leading-loose">
                   <p>
-                    By accessing or using the AgriLoop platform, you agree to be bound by these Terms of Service. If you do not agree, you may not use the Service. AgriLoop reserves the right to update these terms at any time.
+                    By accessing or using the AgriLoop platform, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, you may not access or use the Service. AgriLoop reserves the right to update these terms at any time.
                   </p>
                   <Card className="p-8 bg-primary/5 border-l-4 border-primary shadow-none">
                     <p className="text-foreground italic font-medium">
@@ -186,19 +181,6 @@ export default function TermsPage() {
                   </p>
                 </Card>
               </section>
-
-              <div className="pt-10 border-t flex flex-col md:flex-row items-center justify-between gap-8">
-                <div>
-                  <h4 className="text-foreground font-black text-xl tracking-tight">Ready to join the cycle?</h4>
-                  <p className="text-muted-foreground text-sm">By continuing to use AgriLoop, you confirm agreement to these terms.</p>
-                </div>
-                <div className="flex gap-4">
-                  <Button variant="outline" className="h-12 px-8 font-black">
-                    <Printer className="h-4 w-4 mr-2" /> Print PDF
-                  </Button>
-                  <Button className="h-12 px-8 font-black">Accept & Continue</Button>
-                </div>
-              </div>
             </article>
           </div>
         </div>

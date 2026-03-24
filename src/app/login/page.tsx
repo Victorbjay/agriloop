@@ -1,11 +1,10 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Leaf, Loader2, Sprout, Factory, CheckCircle2, ShieldCheck, Agriculture, BusinessCenter } from 'lucide-react';
+import { Leaf, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
@@ -68,7 +67,6 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left Side: Visual Anchor */}
         <section className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-muted">
           <Image 
             src="https://picsum.photos/seed/agri-login/1200/1000" 
@@ -79,7 +77,6 @@ export default function LoginPage() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
           
-          {/* Brand Overlay */}
           <div className="relative z-10 mt-auto p-16 w-full text-white">
             <div className="flex items-center gap-3 mb-6">
               <Leaf className="h-10 w-10 text-white" />
@@ -104,16 +101,13 @@ export default function LoginPage() {
           </div>
         </section>
 
-        {/* Right Side: Interaction Canvas */}
         <section className="w-full lg:w-1/2 flex flex-col justify-center items-center p-8 md:p-16 lg:p-24 bg-white">
           <div className="w-full max-w-md space-y-10">
-            {/* Header */}
             <div className="space-y-2">
               <h3 className="text-3xl font-black text-foreground tracking-tighter">Welcome Back</h3>
               <p className="text-muted-foreground font-medium">Enter your credentials to access the exchange.</p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleEmailLogin} className="space-y-6">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -144,19 +138,22 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-14 font-black rounded-xl text-lg shadow-lg shadow-primary/20 transition-all hover:translate-y-[-1px]" disabled={loading}>
-                {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Sign In'}
-              </Button>
+              <div className="space-y-4">
+                <Button type="submit" className="w-full h-14 font-black rounded-xl text-lg shadow-lg shadow-primary/20 transition-all hover:translate-y-[-1px]" disabled={loading}>
+                  {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Sign In'}
+                </Button>
+                <p className="text-[10px] text-center text-muted-foreground leading-relaxed">
+                  By signing in, you agree to our <Link href="/terms" className="underline hover:text-primary">Terms of Service</Link> and <Link href="/privacy" className="underline hover:text-primary">Privacy Policy</Link>.
+                </p>
+              </div>
             </form>
 
-            {/* Divider */}
             <div className="relative flex items-center py-2">
               <div className="flex-grow h-px bg-muted"></div>
               <span className="flex-shrink mx-4 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">or continue with</span>
               <div className="flex-grow h-px bg-muted"></div>
             </div>
 
-            {/* Social Logins */}
             <div className="grid grid-cols-1 gap-4">
               <Button 
                 variant="outline" 
@@ -175,20 +172,12 @@ export default function LoginPage() {
               </Button>
             </div>
 
-            {/* Footer Link */}
-            <p className="text-center text-sm font-medium text-muted-foreground">
+            <p className="text-center text-sm font-medium text-muted-foreground pb-8">
               New to the circular economy? 
               <Link href="/signup" className="text-primary font-bold hover:underline ml-1">
                 Create an Account
               </Link>
             </p>
-
-            {/* Legal Footer */}
-            <footer className="pt-12 flex justify-center gap-6">
-              <Link className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="/privacy">Privacy</Link>
-              <Link className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="/terms">Terms</Link>
-              <Link className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest" href="mailto:support@agriloop.com">Support</Link>
-            </footer>
           </div>
         </section>
       </main>

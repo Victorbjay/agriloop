@@ -1,4 +1,3 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -7,25 +6,41 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
   Plus, 
-  TrendingUp, 
-  Clock, 
   ShieldCheck,
   Package,
   ArrowRight,
   Loader2,
   AlertCircle,
   ShoppingCart,
-  DollarSign
+  DollarSign,
+  Trash2,
+  ShieldAlert
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUser, useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, doc } from 'firebase/firestore';
 import { Listing, Order, UserProfile } from '@/types';
 import Image from 'next/image';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from '@/components/ui/alert-dialog';
+import { deleteUser } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
+  const { toast } = useToast();
+  const router = useRouter();
 
   // Fetch user profile
   const profileRef = useMemoFirebase(() => {
@@ -71,6 +86,23 @@ export default function DashboardPage() {
 
   const { data: purchases, isLoading: purchasesLoading } = useCollection<Order>(purchasesQuery);
 
+  const handleDeleteAccount = async () => {
+    if (!auth.currentUser) return;
+    try {
+      await deleteUser(auth.currentUser);
+      toast({ title: "Account Deleted", description: "Your account and data have been removed." });
+      router.push('/');
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Deletion Failed", 
+        description: error.code === 'auth/requires-recent-login' 
+          ? "Please log out and log back in to perform this sensitive action."
+          : error.message 
+      });
+    }
+  };
+
   if (isUserLoading || (user && profileLoading)) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -100,7 +132,7 @@ export default function DashboardPage() {
             <AlertCircle className="h-5 w-5 shrink-0" />
             <div className="text-sm">
               <p className="font-bold">Profile Setup Incomplete</p>
-              <p>We couldn't find your profile data. Please <Link href="/signup" className="underline font-bold">re-register</Link> or contact support if this persists.</p>
+              <p>We couldn't find your profile data. Please <Link href="/signup" className="underline font-bold">re-register</Link> or contact support.</p>
             </div>
           </div>
         )}
@@ -120,7 +152,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Stats Section */}
         <div className="mb-8 grid gap-4 grid-cols-2 lg:grid-cols-4">
           <Card className="border-none shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-4 sm:p-6">
@@ -171,6 +202,7 @@ export default function DashboardPage() {
               <TabsTrigger value="sales" className="px-6 sm:px-8">Sales Activity</TabsTrigger>
               <TabsTrigger value="purchases" className="px-6 sm:px-8">Purchases</TabsTrigger>
               <TabsTrigger value="verification" className="px-6 sm:px-8">Verification</TabsTrigger>
+              <TabsTrigger value="settings" className="px-6 sm:px-8">Settings</TabsTrigger>
             </TabsList>
           </div>
           
@@ -204,7 +236,6 @@ export default function DashboardPage() {
                             <Button size="sm" variant="outline" className="flex-1 sm:flex-none" asChild>
                               <Link href={`/marketplace/${item.id}`}>View</Link>
                             </Button>
-                            <Button size="sm" variant="outline" className="flex-1 sm:flex-none">Edit</Button>
                          </div>
                       </div>
                     </Card>
@@ -327,6 +358,48 @@ export default function DashboardPage() {
                       </Button>
                     )}
                  </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Card className="border-none shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl font-black flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5 text-destructive" />
+                  Security & Data
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-foreground">Delete Account</h3>
+                    <p className="text-sm text-muted-foreground">Permanently remove your account and all associated trading data. This action is irreversible.</p>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" className="font-bold">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Account
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete your account
+                          and remove your data from our servers.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Continue Deletion
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
