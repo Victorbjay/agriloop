@@ -50,7 +50,15 @@ export default function LoginPage() {
       toast({ title: "Signed in with Google", description: "Welcome back." });
       router.push('/dashboard');
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Google Login Failed", description: error.message });
+      if (error.code === 'auth/operation-not-allowed') {
+        toast({ 
+          variant: "destructive", 
+          title: "Google Login Disabled", 
+          description: "Please enable Google Sign-In in your Firebase Console (Authentication > Sign-in method)." 
+        });
+      } else {
+        toast({ variant: "destructive", title: "Google Login Failed", description: error.message });
+      }
     } finally {
       setLoading(false);
     }

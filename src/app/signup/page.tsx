@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -50,7 +51,6 @@ export default function SignupPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    // Follows non-blocking pattern
     setDocumentNonBlocking(userRef, profileData, { merge: true });
   };
 
@@ -93,7 +93,15 @@ export default function SignupPage() {
       toast({ title: "Signed up with Google", description: "Welcome to AgriLoop." });
       router.push('/dashboard');
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Google Signup Failed", description: error.message });
+      if (error.code === 'auth/operation-not-allowed') {
+        toast({ 
+          variant: "destructive", 
+          title: "Google Sign-In Disabled", 
+          description: "Please enable Google Sign-In in your Firebase Console (Authentication > Sign-in method)." 
+        });
+      } else {
+        toast({ variant: "destructive", title: "Google Signup Failed", description: error.message });
+      }
     } finally {
       setLoading(false);
     }
