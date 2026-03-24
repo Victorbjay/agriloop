@@ -2,6 +2,7 @@
 
 import { Listing } from '@/types';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { MapPin, Info, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
