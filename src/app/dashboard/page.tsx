@@ -14,14 +14,22 @@ import {
   Loader2
 } from 'lucide-react';
 import Link from 'next/link';
-import { useUser, useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, query, where, limit } from 'firebase/firestore';
-import { Listing, Order } from '@/types';
+import { useUser, useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit, doc } from 'firebase/firestore';
+import { Listing, Order, UserProfile } from '@/types';
 import Image from 'next/image';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const { firestore } = useFirebase();
+
+  // Fetch user profile for name display
+  const profileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: profile, isLoading: profileLoading } = useDoc<UserProfile>(profileRef);
 
   // Fetch user's listings
   const userListingsQuery = useMemoFirebase(() => {
@@ -47,7 +55,7 @@ export default function DashboardPage() {
 
   const { data: orders, isLoading: ordersLoading } = useCollection<Order>(userOrdersQuery);
 
-  if (isUserLoading) {
+  if (isUserLoading || profileLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -64,6 +72,8 @@ export default function DashboardPage() {
     );
   }
 
+  const welcomeName = profile ? `${profile.firstName} ${profile.lastName}` : (user.displayName || 'Agro-Partner');
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -71,7 +81,7 @@ export default function DashboardPage() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-black text-foreground">Welcome back, {user.displayName || 'Agro-Partner'}</h1>
+            <h1 className="text-3xl font-black text-foreground">Welcome back, {welcomeName}</h1>
             <p className="text-muted-foreground">Your account is currently <span className="font-bold text-primary">Active</span>.</p>
           </div>
           <div className="flex gap-2">
@@ -122,7 +132,7 @@ export default function DashboardPage() {
               <ShieldCheck className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Pending</div>
+              <div className="text-2xl font-bold">{profile?.verificationStatus === 'verified' ? 'Verified' : 'Pending'}</div>
               <p className="text-xs text-muted-foreground">Complete your profile</p>
             </CardContent>
           </Card>
@@ -233,10 +243,12 @@ export default function DashboardPage() {
                       <ShieldCheck className="h-16 w-16 text-muted-foreground" />
                     </div>
                     <div className="space-y-2">
-                      <h2 className="text-2xl font-black">Verification Pending</h2>
+                      <h2 className="text-2xl font-black">{profile?.verificationStatus === 'verified' ? 'Verification Complete' : 'Verification Pending'}</h2>
                       <p className="max-w-md text-muted-foreground">To trade at higher volumes and earn trust badges, please complete your BVN and CAC verification.</p>
                     </div>
-                    <Button className="font-bold px-10">Start Verification</Button>
+                    {profile?.verificationStatus !== 'verified' && (
+                      <Button className="font-bold px-10">Start Verification</Button>
+                    )}
                  </div>
               </CardContent>
             </Card>
