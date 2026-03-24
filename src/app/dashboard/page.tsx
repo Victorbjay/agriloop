@@ -322,7 +322,9 @@ export default function DashboardPage() {
                       <p className="max-w-md text-sm sm:text-base text-muted-foreground">To trade at higher volumes and earn trust badges, please complete your BVN and CAC verification.</p>
                     </div>
                     {profile?.verificationStatus !== 'verified' && (
-                      <Button className="font-bold px-10 w-full sm:w-auto">Start Verification</Button>
+                      <Button className="font-bold px-10 w-full sm:w-auto" asChild>
+                        <Link href="/verify">Start Verification</Link>
+                      </Button>
                     )}
                  </div>
               </CardContent>
