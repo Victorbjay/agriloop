@@ -11,8 +11,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Allow any signed-in user to read profiles (needed for marketplace/orders)
-      allow read: if isSignedIn();
+      // Allow any user (including guests) to read profiles
+      // Needed for marketplace display and trust verification before login
+      allow read: if true;
       // Only the owner can update their own profile
       allow write: if isOwner(userId);
     }
