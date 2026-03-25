@@ -35,6 +35,7 @@ export default function SignupPage() {
     lastName: '',
     email: '',
     password: '',
+    confirmPassword: '',
   });
 
   const [ninData, setNinData] = useState<any>(null);
@@ -67,6 +68,14 @@ export default function SignupPage() {
     e.preventDefault();
     if (!formData.email || !formData.password || !formData.firstName) {
       toast({ title: "Required fields", description: "Please fill in all basic info.", variant: "destructive" });
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      toast({ title: "Passwords Mismatch", description: "Passwords do not match.", variant: "destructive" });
+      return;
+    }
+    if (formData.password.length < 6) {
+      toast({ title: "Weak Password", description: "Password must be at least 6 characters.", variant: "destructive" });
       return;
     }
     setStep('ROLE');
@@ -107,7 +116,7 @@ export default function SignupPage() {
     if (!ninData) return;
     
     if (nin.trim() === "12345678901") {
-      handleFinalSignup('bronze', ninData.phone);
+      handleFinalSignup('none', ninData.phone);
       return;
     }
 
@@ -118,7 +127,7 @@ export default function SignupPage() {
     const isMatch = inputName.includes(ninFirstName) || inputName.includes(ninLastName);
 
     if (isMatch) {
-      handleFinalSignup('bronze', ninData.phone);
+      handleFinalSignup('none', ninData.phone);
     } else {
       toast({ 
         title: "Name Mismatch", 
@@ -228,14 +237,25 @@ export default function SignupPage() {
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Create Password</Label>
-                    <Input 
-                      id="password" 
-                      type="password" 
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input 
+                        id="password" 
+                        type="password" 
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <Input 
+                        id="confirm-password" 
+                        type="password" 
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                      />
+                    </div>
                   </div>
                   <div className="space-y-4">
                     <Button type="submit" className="w-full font-bold h-11">
@@ -330,7 +350,7 @@ export default function SignupPage() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground text-center">
-                  To earn your <b>Bronze Trust Badge</b>, confirm your name matches the NIN record above.
+                  Please confirm your name matches the NIN record above to complete your profile.
                 </p>
                 <Button className="w-full font-bold h-11 bg-accent text-accent-foreground" onClick={handleIdentityMatch} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
