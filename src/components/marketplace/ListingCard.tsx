@@ -11,6 +11,9 @@ interface ListingCardProps {
 }
 
 export default function ListingCard({ listing }: ListingCardProps) {
+  // Only show high-tier verification badges (Silver/Gold) on the marketplace cards
+  const showBadge = listing.sellerBadge === 'silver' || listing.sellerBadge === 'gold';
+
   const badgeColor = {
     none: 'bg-muted text-muted-foreground',
     bronze: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -34,12 +37,14 @@ export default function ListingCard({ listing }: ListingCardProps) {
             {listing.condition}
           </Badge>
         </div>
-        <div className="absolute right-2 top-2">
-          <Badge className={cn("flex items-center gap-1 border", badgeColor)}>
-            <ShieldCheck className="h-3 w-3" />
-            <span className="capitalize">{listing.sellerBadge}</span>
-          </Badge>
-        </div>
+        {showBadge && (
+          <div className="absolute right-2 top-2">
+            <Badge className={cn("flex items-center gap-1 border", badgeColor)}>
+              <ShieldCheck className="h-3 w-3" />
+              <span className="capitalize">{listing.sellerBadge}</span>
+            </Badge>
+          </div>
+        )}
       </div>
       <CardContent className="p-4">
         <div className="mb-2 flex items-center justify-between">
