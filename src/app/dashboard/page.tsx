@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -16,12 +17,14 @@ import {
   Trash2,
   ShieldAlert,
   BarChart3,
-  Search
+  Search,
+  RefreshCw
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUser, useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, doc } from 'firebase/firestore';
 import { Listing, Order, UserProfile } from '@/types';
+import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Image from 'next/image';
 import { 
   AlertDialog, 
@@ -37,12 +40,14 @@ import {
 import { deleteUser } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const { firestore, auth } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
+  const [switchingRole, setSwitchingRole] = useState(false);
 
   // Fetch user profile
   const profileRef = useMemoFirebase(() => {
@@ -105,6 +110,24 @@ export default function DashboardPage() {
     }
   };
 
+  const handleSwitchToSeller = async () => {
+    if (!profileRef || !profile) return;
+    setSwitchingRole(true);
+    try {
+      updateDocumentNonBlocking(profileRef, {
+        role: 'seller',
+        verificationStatus: profile.verificationStatus === 'verified' ? 'verified' : 'pending',
+        updatedAt: new Date().toISOString()
+      });
+      toast({ title: "Role Updated", description: "You are now a Seller. Complete verification to list products." });
+      router.push('/verify');
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Update Failed", description: error.message });
+    } finally {
+      setSwitchingRole(false);
+    }
+  };
+
   if (isUserLoading || profileLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -147,7 +170,7 @@ export default function DashboardPage() {
             </h1>
             <p className="text-sm text-muted-foreground sm:text-base">
               Welcome back, <span className="font-bold text-foreground">{welcomeName}</span>. 
-              Account status: <span className="font-bold text-primary">Active</span>.
+              Role: <span className="font-bold text-primary capitalize">{profile?.role}</span>.
             </p>
           </div>
           <div className="flex gap-2">
@@ -391,6 +414,11 @@ export default function DashboardPage() {
                         <Link href="/verify">Start Verification</Link>
                       </Button>
                     )}
+                    {profile?.verificationStatus === 'verified' && (
+                      <div className="rounded-xl bg-primary/10 p-4 border border-primary/20 text-primary font-bold">
+                        Verified Partner Level: {profile.badge.toUpperCase()}
+                      </div>
+                    )}
                  </div>
               </CardContent>
             </Card>
@@ -400,11 +428,28 @@ export default function DashboardPage() {
             <Card className="border-none shadow-sm">
               <CardHeader>
                 <CardTitle className="text-xl font-black flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5 text-destructive" />
-                  Security & Data
+                  <ShieldAlert className="h-5 w-5 text-primary" />
+                  Account Settings
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {!isSeller && (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-foreground">Become a Seller</h3>
+                      <p className="text-sm text-muted-foreground">Unlock the ability to list agricultural waste and receive payments directly.</p>
+                    </div>
+                    <Button 
+                      onClick={handleSwitchToSeller} 
+                      disabled={switchingRole}
+                      className="font-bold h-12 px-8 shadow-md"
+                    >
+                      {switchingRole ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                      Switch to Seller Role
+                    </Button>
+                  </div>
+                )}
+
                 <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="space-y-1">
                     <h3 className="font-bold text-foreground">Delete Account</h3>

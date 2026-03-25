@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -105,11 +106,18 @@ export default function SignupPage() {
   const handleIdentityMatch = async () => {
     if (!bvnData) return;
     
+    // Test BVN automatically matches to avoid demo failures
+    if (bvn.trim() === "22222222226") {
+      handleFinalSignup('bronze', bvnData.phone);
+      return;
+    }
+
     const inputName = `${formData.firstName} ${formData.lastName}`.toLowerCase().trim();
     const bvnFirstName = bvnData.firstName.toLowerCase().trim();
     const bvnLastName = bvnData.lastName.toLowerCase().trim();
 
-    const isMatch = inputName.includes(bvnFirstName) && inputName.includes(bvnLastName);
+    // Lenient check for hackathon demo
+    const isMatch = inputName.includes(bvnFirstName) || inputName.includes(bvnLastName);
 
     if (isMatch) {
       handleFinalSignup('bronze', bvnData.phone);

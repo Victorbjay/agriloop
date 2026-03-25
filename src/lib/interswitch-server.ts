@@ -17,7 +17,7 @@ async function getIswAccessToken(): Promise<string> {
   const secret = process.env.INTERSWITCH_SECRET_KEY;
 
   if (!clientId || !secret) {
-    console.error('Interswitch credentials missing in .env');
+    console.warn('Interswitch credentials missing in .env. Using DEMO_TOKEN.');
     return "DEMO_TOKEN";
   }
 
@@ -31,6 +31,7 @@ async function getIswAccessToken(): Promise<string> {
         'Authorization': `Basic ${authHeader}`,
       },
       body: new URLSearchParams({ grant_type: 'client_credentials', scope: 'profile' }),
+      next: { revalidate: 3600 } // Cache token for 1 hour
     });
 
     if (!response.ok) {
@@ -66,13 +67,14 @@ export async function validateBvnBooleanAction(bvn: string) {
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ bvn: cleanBvn }),
+      signal: AbortSignal.timeout(10000) // 10s timeout
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorData = await response.json().catch(() => ({}));
       return { 
         valid: false, 
-        message: errorData.message || "Identity service unavailable. Check your credentials or try test BVN 22222222226." 
+        message: errorData.message || "Identity service unavailable. Please use test BVN 22222222226 for the demo." 
       };
     }
 
@@ -109,6 +111,7 @@ export async function getBvnFullDetailsAction(bvn: string) {
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ bvn: cleanBvn }),
+      signal: AbortSignal.timeout(10000)
     });
 
     if (!response.ok) {
