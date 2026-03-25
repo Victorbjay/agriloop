@@ -148,16 +148,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <footer className="border-t bg-muted/20 py-12">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-             <Leaf className="h-6 w-6 text-primary" />
-             <span className="text-lg font-bold text-primary">AgriLoop</span>
-          </div>
-          <p className="text-sm text-muted-foreground">© 2024 AgriLoop Marketplace. All rights reserved. Hackathon MVP v0.1.</p>
-        </div>
-      </footer>
     </div>
   );
 }
