@@ -110,17 +110,24 @@ export default function DashboardPage() {
     }
   };
 
-  const handleSwitchToSeller = async () => {
+  const handleSwitchRole = async (targetRole: 'seller' | 'buyer') => {
     if (!profileRef || !profile) return;
     setSwitchingRole(true);
     try {
       updateDocumentNonBlocking(profileRef, {
-        role: 'seller',
-        verificationStatus: profile.verificationStatus === 'verified' ? 'verified' : 'pending',
+        role: targetRole,
         updatedAt: new Date().toISOString()
       });
-      toast({ title: "Role Updated", description: "You are now a Seller. Complete NIN verification to list products." });
-      router.push('/verify');
+      
+      toast({ 
+        title: "Role Updated", 
+        description: `You are now a ${targetRole === 'seller' ? 'Seller' : 'Buyer'}.` 
+      });
+
+      // If switching to seller and not verified, nudge to verify
+      if (targetRole === 'seller' && profile.verificationStatus !== 'verified') {
+        router.push('/verify');
+      }
     } catch (error: any) {
       toast({ variant: "destructive", title: "Update Failed", description: error.message });
     } finally {
@@ -433,22 +440,26 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {!isSeller && (
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-foreground">Become a Seller</h3>
-                      <p className="text-sm text-muted-foreground">Unlock the ability to list agricultural waste and receive payments directly.</p>
-                    </div>
-                    <Button 
-                      onClick={handleSwitchToSeller} 
-                      disabled={switchingRole}
-                      className="font-bold h-12 px-8 shadow-md"
-                    >
-                      {switchingRole ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                      Switch to Seller Role
-                    </Button>
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-foreground">
+                      {isSeller ? 'Switch to Buyer Account' : 'Become a Seller'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {isSeller 
+                        ? 'Switch to a procurement-focused dashboard to source agricultural waste.' 
+                        : 'Unlock the ability to list agricultural waste and receive payments directly.'}
+                    </p>
                   </div>
-                )}
+                  <Button 
+                    onClick={() => handleSwitchRole(isSeller ? 'buyer' : 'seller')} 
+                    disabled={switchingRole}
+                    className="font-bold h-12 px-8 shadow-md"
+                  >
+                    {switchingRole ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    {isSeller ? 'Switch to Buyer' : 'Switch to Seller'}
+                  </Button>
+                </div>
 
                 <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 flex flex-col md:flex-row items-center justify-between gap-6">
                   <div className="space-y-1">
