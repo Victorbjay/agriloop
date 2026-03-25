@@ -46,55 +46,61 @@ async function getIswAccessToken(): Promise<string> {
   }
 }
 
-export async function validateBvnBooleanAction(bvn: string) {
-  const cleanBvn = bvn.trim();
+/**
+ * NIN Boolean Match Action
+ */
+export async function validateNinBooleanAction(nin: string) {
+  const cleanNin = nin.trim();
   
-  // Test BVN for demo continuity
-  if (cleanBvn === "22222222226") {
-    return { valid: true, message: "BVN validated (Hackathon Demo Mode)" };
+  // Test NIN for demo continuity
+  if (cleanNin === "12345678901") {
+    return { valid: true, message: "NIN validated (Hackathon Demo Mode)" };
   }
 
   try {
     const token = await getIswAccessToken();
     if (token === "DEMO_TOKEN" || token === "FALLBACK_TOKEN") {
-      return { valid: false, message: "Identity service configuration error. Use 22222222226 for testing." };
+      return { valid: false, message: "Identity service configuration error. Use 12345678901 for testing." };
     }
 
-    const response = await fetch(`${ISW_BASE_URL}/api/v1/identity/bvn/boolean`, {
+    const response = await fetch(`${ISW_BASE_URL}/api/v1/identity/nin/boolean`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ bvn: cleanBvn }),
-      signal: AbortSignal.timeout(10000) // 10s timeout
+      body: JSON.stringify({ nin: cleanNin }),
+      signal: AbortSignal.timeout(10000)
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       return { 
         valid: false, 
-        message: errorData.message || "Identity service unavailable. Please use test BVN 22222222226 for the demo." 
+        message: errorData.message || "Identity service unavailable. Please use test NIN 12345678901 for the demo." 
       };
     }
 
     const data = await response.json();
     return { 
       valid: data.valid || false, 
-      message: data.message || (data.valid ? "BVN is valid" : "Invalid BVN") 
+      message: data.message || (data.valid ? "NIN is valid" : "Invalid NIN") 
     };
   } catch (error) {
-    console.error('Interswitch Boolean Error:', error);
-    return { valid: false, message: "Could not reach Interswitch. Please use the test BVN 22222222226." };
+    console.error('Interswitch NIN Boolean Error:', error);
+    return { valid: false, message: "Could not reach Interswitch. Please use the test NIN 12345678901." };
   }
 }
 
-export async function getBvnFullDetailsAction(bvn: string) {
-  const cleanBvn = bvn.trim();
+/**
+ * NIN Full Details Action
+ */
+export async function getNinFullDetailsAction(nin: string) {
+  const cleanNin = nin.trim();
 
-  if (cleanBvn === "22222222226") {
+  if (cleanNin === "12345678901") {
     return {
-      firstName: "HACKATHON",
+      firstName: "AGRILOOP",
       lastName: "PARTNER",
       phone: "08000000000",
       photo: "https://picsum.photos/seed/hackathon/200/200",
@@ -104,13 +110,13 @@ export async function getBvnFullDetailsAction(bvn: string) {
 
   try {
     const token = await getIswAccessToken();
-    const response = await fetch(`${ISW_BASE_URL}/api/v1/identity/bvn`, {
+    const response = await fetch(`${ISW_BASE_URL}/api/v1/identity/nin`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ bvn: cleanBvn }),
+      body: JSON.stringify({ nin: cleanNin }),
       signal: AbortSignal.timeout(10000)
     });
 
@@ -120,8 +126,7 @@ export async function getBvnFullDetailsAction(bvn: string) {
 
     return await response.json();
   } catch (error) {
-    console.error('Interswitch Details Error:', error);
-    // Fallback for demo continuity if sandbox is unstable
+    console.error('Interswitch NIN Details Error:', error);
     return {
       firstName: "DEMO",
       lastName: "USER",

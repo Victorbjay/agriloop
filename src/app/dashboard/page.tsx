@@ -119,7 +119,7 @@ export default function DashboardPage() {
         verificationStatus: profile.verificationStatus === 'verified' ? 'verified' : 'pending',
         updatedAt: new Date().toISOString()
       });
-      toast({ title: "Role Updated", description: "You are now a Seller. Complete verification to list products." });
+      toast({ title: "Role Updated", description: "You are now a Seller. Complete NIN verification to list products." });
       router.push('/verify');
     } catch (error: any) {
       toast({ variant: "destructive", title: "Update Failed", description: error.message });
@@ -405,7 +405,7 @@ export default function DashboardPage() {
                       <h2 className="text-xl sm:text-2xl font-black">{profile?.verificationStatus === 'verified' ? 'Verification Complete' : 'Verification Pending'}</h2>
                       <p className="max-w-md text-sm sm:text-base text-muted-foreground">
                         {isSeller 
-                          ? 'Sellers must complete BVN and CAC verification to trade at high volumes.' 
+                          ? 'Sellers must complete NIN and CAC verification to trade at high volumes.' 
                           : 'Complete your verification to build trust with high-quality sellers.'}
                       </p>
                     </div>

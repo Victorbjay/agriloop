@@ -1,3 +1,4 @@
+
 import { Timestamp } from 'firebase/firestore';
 
 export type UserRole = 'seller' | 'buyer';
@@ -11,8 +12,8 @@ export interface UserProfile {
   phone: string;
   businessName?: string;
   rcNumber?: string;
-  bvn: string;
-  bvnVerified: boolean;
+  nin: string;
+  ninVerified: boolean;
   cacVerified: boolean;
   verificationStatus: 'pending' | 'verified' | 'failed';
   verifiedAt?: string;

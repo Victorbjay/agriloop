@@ -1,3 +1,4 @@
+
 /**
  * This utility handles the Interswitch integration.
  * It uses Server Actions to protect sensitive keys while providing 
@@ -7,27 +8,26 @@
 'use client';
 
 import { 
-  validateBvnBooleanAction, 
-  getBvnFullDetailsAction, 
+  validateNinBooleanAction, 
+  getNinFullDetailsAction, 
   getCheckoutConfigAction 
 } from './interswitch-server';
 
 /**
- * 1. BVN Boolean Match
- * Used in Signup Step 1
+ * 1. NIN Boolean Match
+ * Used in Signup Step
  */
-export async function checkBvnBoolean(bvn: string) {
-  const cleanBvn = bvn.trim();
-  return await validateBvnBooleanAction(cleanBvn);
+export async function checkNinBoolean(nin: string) {
+  const cleanNin = nin.trim();
+  return await validateNinBooleanAction(cleanNin);
 }
 
 /**
- * 2. BVN Full Details
- * Used in Signup Step 2
+ * 2. NIN Full Details
  */
-export async function getBvnFullDetails(bvn: string) {
-  const cleanBvn = bvn.trim();
-  return await getBvnFullDetailsAction(cleanBvn);
+export async function getNinFullDetails(nin: string) {
+  const cleanNin = nin.trim();
+  return await getNinFullDetailsAction(cleanNin);
 }
 
 /**
@@ -42,7 +42,6 @@ export async function getCheckoutConfig(orderId: string, amount: number, buyerEm
  * Client-side constants for Interswitch
  */
 export const INTERSWITCH_CLIENT_CONFIG = {
-  // These are safe to expose as they are required by the client SDK
   REDIRECT_URL: typeof window !== 'undefined' ? `${window.location.origin}/payment/callback` : "",
   CURRENCY_CODE: "566", // NGN
 };

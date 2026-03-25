@@ -40,13 +40,13 @@
           "type": "string",
           "description": "Optional: The registration number of the user's company (for CAC verification)."
         },
-        "bvn": {
+        "nin": {
           "type": "string",
-          "description": "The Bank Verification Number (BVN) of the user, used for identity verification."
+          "description": "The National Identification Number (NIN) of the user, used for identity verification."
         },
-        "bvnVerified": {
+        "ninVerified": {
           "type": "boolean",
-          "description": "Indicates if the user's BVN has been successfully verified."
+          "description": "Indicates if the user's NIN has been successfully verified."
         },
         "cacVerified": {
           "type": "boolean",
@@ -95,8 +95,8 @@
         "firstName",
         "lastName",
         "phone",
-        "bvn",
-        "bvnVerified",
+        "nin",
+        "ninVerified",
         "cacVerified",
         "verificationStatus",
         "address",

@@ -16,9 +16,9 @@ import { doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { checkBvnBoolean, getBvnFullDetails } from '@/lib/interswitch';
+import { checkNinBoolean, getNinFullDetails } from '@/lib/interswitch';
 
-type SignupStep = 'BASIC' | 'ROLE' | 'BVN_VALIDATION' | 'IDENTITY_CHECK' | 'SUCCESS';
+type SignupStep = 'BASIC' | 'ROLE' | 'NIN_VALIDATION' | 'IDENTITY_CHECK' | 'SUCCESS';
 
 export default function SignupPage() {
   const { auth, firestore } = useFirebase();
@@ -28,7 +28,7 @@ export default function SignupPage() {
   const [step, setStep] = useState<SignupStep>('BASIC');
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<'seller' | 'buyer'>('seller');
-  const [bvn, setBvn] = useState('');
+  const [nin, setNin] = useState('');
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -37,7 +37,7 @@ export default function SignupPage() {
     password: '',
   });
 
-  const [bvnData, setBvnData] = useState<any>(null);
+  const [ninData, setNinData] = useState<any>(null);
 
   const createProfile = (uid: string, email: string, firstName: string, lastName: string, badge: any = 'none', phone: string = '') => {
     const userRef = doc(firestore, 'users', uid);
@@ -48,8 +48,8 @@ export default function SignupPage() {
       firstName: firstName,
       lastName: lastName,
       phone: phone,
-      bvn: bvn.trim(),
-      bvnVerified: badge !== 'none',
+      nin: nin.trim(),
+      ninVerified: badge !== 'none',
       cacVerified: false,
       verificationStatus: badge !== 'none' ? 'verified' : 'pending',
       address: '',
@@ -74,24 +74,24 @@ export default function SignupPage() {
 
   const handleRoleSelection = () => {
     if (role === 'seller') {
-      setStep('BVN_VALIDATION');
+      setStep('NIN_VALIDATION');
     } else {
       handleFinalSignup();
     }
   };
 
-  const handleBvnValidation = async () => {
-    const trimmedBvn = bvn.trim();
-    if (trimmedBvn.length !== 11) {
-      toast({ title: "Invalid BVN", description: "BVN must be 11 digits.", variant: "destructive" });
+  const handleNinValidation = async () => {
+    const trimmedNin = nin.trim();
+    if (trimmedNin.length !== 11) {
+      toast({ title: "Invalid NIN", description: "NIN must be 11 digits.", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
-      const result = await checkBvnBoolean(trimmedBvn);
+      const result = await checkNinBoolean(trimmedNin);
       if (result.valid) {
-        const details = await getBvnFullDetails(trimmedBvn);
-        setBvnData(details);
+        const details = await getNinFullDetails(trimmedNin);
+        setNinData(details);
         setStep('IDENTITY_CHECK');
       } else {
         toast({ title: "Validation Failed", description: result.message, variant: "destructive" });
@@ -104,27 +104,25 @@ export default function SignupPage() {
   };
 
   const handleIdentityMatch = async () => {
-    if (!bvnData) return;
+    if (!ninData) return;
     
-    // Test BVN automatically matches to avoid demo failures
-    if (bvn.trim() === "22222222226") {
-      handleFinalSignup('bronze', bvnData.phone);
+    if (nin.trim() === "12345678901") {
+      handleFinalSignup('bronze', ninData.phone);
       return;
     }
 
     const inputName = `${formData.firstName} ${formData.lastName}`.toLowerCase().trim();
-    const bvnFirstName = bvnData.firstName.toLowerCase().trim();
-    const bvnLastName = bvnData.lastName.toLowerCase().trim();
+    const ninFirstName = ninData.firstName.toLowerCase().trim();
+    const ninLastName = ninData.lastName.toLowerCase().trim();
 
-    // Lenient check for hackathon demo
-    const isMatch = inputName.includes(bvnFirstName) || inputName.includes(bvnLastName);
+    const isMatch = inputName.includes(ninFirstName) || inputName.includes(ninLastName);
 
     if (isMatch) {
-      handleFinalSignup('bronze', bvnData.phone);
+      handleFinalSignup('bronze', ninData.phone);
     } else {
       toast({ 
         title: "Name Mismatch", 
-        description: `Records for this BVN are registered to ${bvnData.firstName} ${bvnData.lastName}. Please correct your name or use your own BVN.`, 
+        description: `Records for this NIN are registered to ${ninData.firstName} ${ninData.lastName}. Please correct your name or use your own NIN.`, 
         variant: "destructive" 
       });
     }
@@ -165,15 +163,7 @@ export default function SignupPage() {
       );
       router.push('/dashboard');
     } catch (error: any) {
-      if (error.code === 'auth/operation-not-allowed') {
-        toast({ 
-          variant: "destructive", 
-          title: "Google Login Disabled", 
-          description: "Please enable Google Sign-In in your Firebase Console (Authentication > Sign-in method)." 
-        });
-      } else {
-        toast({ variant: "destructive", title: "Google Signup Failed", description: error.message });
-      }
+      toast({ variant: "destructive", title: "Google Signup Failed", description: error.message });
     } finally {
       setLoading(false);
     }
@@ -191,14 +181,14 @@ export default function SignupPage() {
             <CardTitle className="text-2xl font-black">
               {step === 'BASIC' && 'Join AgriLoop'}
               {step === 'ROLE' && 'Choose Your Goal'}
-              {step === 'BVN_VALIDATION' && 'Verify Identity'}
+              {step === 'NIN_VALIDATION' && 'Verify Identity'}
               {step === 'IDENTITY_CHECK' && 'Confirm Identity'}
               {step === 'SUCCESS' && 'Welcome Aboard!'}
             </CardTitle>
             <CardDescription>
               {step === 'BASIC' && 'Start turning agricultural waste into value today.'}
               {step === 'ROLE' && 'Tell us how you plan to use the platform.'}
-              {step === 'BVN_VALIDATION' && 'Interswitch BVN validation is required for sellers.'}
+              {step === 'NIN_VALIDATION' && 'Interswitch NIN validation is required for sellers.'}
               {step === 'IDENTITY_CHECK' && 'We found a match in our records.'}
               {step === 'SUCCESS' && 'Your account has been successfully created.'}
             </CardDescription>
@@ -304,26 +294,26 @@ export default function SignupPage() {
               </div>
             )}
 
-            {step === 'BVN_VALIDATION' && (
+            {step === 'NIN_VALIDATION' && (
               <div className="space-y-4">
                 <div className="rounded-lg bg-amber-50 p-4 flex gap-3 items-start border border-amber-200">
                   <ShieldCheck className="h-5 w-5 text-amber-600 shrink-0" />
                   <p className="text-xs text-amber-800">
-                    Sellers must verify their identity using BVN to list items. Use <b>22222222226</b> for testing.
+                    Sellers must verify their identity using NIN to list items. Use <b>12345678901</b> for testing.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Bank Verification Number (BVN)</Label>
+                  <Label>National Identification Number (NIN)</Label>
                   <Input 
-                    placeholder="22222222226" 
-                    value={bvn}
-                    onChange={(e) => setBvn(e.target.value)}
+                    placeholder="12345678901" 
+                    value={nin}
+                    onChange={(e) => setNin(e.target.value)}
                     maxLength={11}
                   />
                 </div>
-                <Button className="w-full font-bold h-11" onClick={handleBvnValidation} disabled={loading}>
+                <Button className="w-full font-bold h-11" onClick={handleNinValidation} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Validate BVN
+                  Validate NIN
                 </Button>
               </div>
             )}
@@ -332,15 +322,15 @@ export default function SignupPage() {
               <div className="space-y-6">
                 <div className="rounded-xl border p-4 flex items-center gap-4 bg-muted/30">
                   <div className="h-12 w-12 rounded-full overflow-hidden bg-primary/10">
-                    <img src={bvnData?.photo} alt="BVN Photo" className="h-full w-full object-cover" />
+                    <img src={ninData?.photo} alt="NIN Photo" className="h-full w-full object-cover" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold">{bvnData?.firstName} {bvnData?.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{bvnData?.phone}</p>
+                    <p className="text-sm font-bold">{ninData?.firstName} {ninData?.lastName}</p>
+                    <p className="text-xs text-muted-foreground">{ninData?.phone}</p>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground text-center">
-                  To earn your <b>Bronze Trust Badge</b>, confirm your name matches the BVN record above.
+                  To earn your <b>Bronze Trust Badge</b>, confirm your name matches the NIN record above.
                 </p>
                 <Button className="w-full font-bold h-11 bg-accent text-accent-foreground" onClick={handleIdentityMatch} disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
