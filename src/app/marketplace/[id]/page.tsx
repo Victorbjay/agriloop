@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -24,7 +25,7 @@ import { useDoc, useFirebase, useUser } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
 import { Listing, UserProfile, OrderStatus } from '@/types';
 import { useMemoFirebase } from '@/firebase/provider';
-import { getCheckoutConfig, INTERSWITCH_CONFIG } from '@/lib/interswitch';
+import { getCheckoutConfig } from '@/lib/interswitch';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -58,10 +59,10 @@ export default function ListingDetailPage() {
   const { data: sellerProfile } = useDoc<UserProfile>(sellerRef);
 
   const handlePayment = (response: any, orderId: string, orderData: any) => {
+    // response.resp "00" indicates success in Interswitch
     if (response && response.resp === "00") {
       toast({ title: "Payment Successful", description: "Verifying transaction..." });
       
-      // Update order status to 'payment_held'
       const ordersRef = collection(firestore, 'orders');
       addDocumentNonBlocking(ordersRef, {
         ...orderData,
@@ -91,49 +92,59 @@ export default function ListingDetailPage() {
 
     setCheckoutLoading(true);
     
-    const orderId = `ORD-${Date.now()}`;
-    const orderData = {
-      listingId: listing.id,
-      listingSnapshotId: listing.id,
-      listingSnapshotWasteType: listing.wasteType,
-      listingSnapshotWasteTypeLabel: listing.wasteTypeLabel,
-      listingSnapshotCondition: listing.condition,
-      listingSnapshotPricePerKg: listing.pricePerKg,
-      listingSnapshotMoqKg: listing.moqKg,
-      listingSnapshotQualityGrade: listing.qualityGrade,
-      listingSnapshotAvailableFrom: listing.availableFrom,
-      buyerId: user.uid,
-      buyerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Buyer',
-      sellerId: listing.sellerId,
-      sellerName: listing.sellerName,
-      quantityKg: listing.quantityKg,
-      pricePerKg: listing.pricePerKg,
-      totalAmount: listing.totalPrice,
-      deliveryMethod: 'self_pickup',
-      status: 'pending_payment' as OrderStatus,
-      pickupLocationAddress: listing.locationAddress,
-      pickupLocationLatitude: 6.5244,
-      pickupLocationLongitude: 3.3792,
-      pickupLocationContactPhone: sellerProfile?.phone || '08012345678',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    try {
+      const orderId = `ORD-${Date.now()}`;
+      const orderData = {
+        listingId: listing.id,
+        listingSnapshotId: listing.id,
+        listingSnapshotWasteType: listing.wasteType,
+        listingSnapshotWasteTypeLabel: listing.wasteTypeLabel,
+        listingSnapshotCondition: listing.condition,
+        listingSnapshotPricePerKg: listing.pricePerKg,
+        listingSnapshotMoqKg: listing.moqKg,
+        listingSnapshotQualityGrade: listing.qualityGrade,
+        listingSnapshotAvailableFrom: listing.availableFrom,
+        buyerId: user.uid,
+        buyerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Buyer',
+        sellerId: listing.sellerId,
+        sellerName: listing.sellerName,
+        quantityKg: listing.quantityKg,
+        pricePerKg: listing.pricePerKg,
+        totalAmount: listing.totalPrice,
+        deliveryMethod: 'self_pickup',
+        status: 'pending_payment' as OrderStatus,
+        pickupLocationAddress: listing.locationAddress,
+        pickupLocationLatitude: 6.5244,
+        pickupLocationLongitude: 3.3792,
+        pickupLocationContactPhone: sellerProfile?.phone || '08012345678',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-    const config = getCheckoutConfig(
-      orderId, 
-      listing.totalPrice, 
-      user.email || 'customer@example.com',
-      user.displayName || 'Customer'
-    );
+      // CRITICAL: Await the server-side config retrieval
+      const config = await getCheckoutConfig(
+        orderId, 
+        listing.totalPrice, 
+        user.email || 'customer@example.com',
+        user.displayName || 'Customer'
+      );
 
-    // Trigger Interswitch Inline Checkout
-    if (window.webpayCheckout) {
-      window.webpayCheckout({
-        ...config,
-        onComplete: (response: any) => handlePayment(response, orderId, orderData)
+      // Trigger Interswitch Inline Checkout
+      if (window.webpayCheckout) {
+        window.webpayCheckout({
+          ...config,
+          onComplete: (response: any) => handlePayment(response, orderId, orderData)
+        });
+      } else {
+        throw new Error("Payment gateway is still loading. Please refresh and try again.");
+      }
+    } catch (error: any) {
+      console.error("Checkout Error:", error);
+      toast({ 
+        variant: "destructive", 
+        title: "Checkout Error", 
+        description: error.message || "Failed to initialize payment gateway." 
       });
-    } else {
-      toast({ variant: "destructive", title: "Checkout Error", description: "Payment gateway is loading. Please try again in a moment." });
       setCheckoutLoading(false);
     }
   };

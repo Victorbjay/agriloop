@@ -31,10 +31,10 @@ export default function RootLayout({
           <Footer />
           <Toaster />
         </FirebaseClientProvider>
-        {/* Interswitch Inline Checkout SDK */}
+        {/* Interswitch Inline Checkout SDK - Changed strategy to afterInteractive for better reliability */}
         <Script 
           src="https://newwebpay.qa.interswitchng.com/inline-checkout.js" 
-          strategy="lazyOnload"
+          strategy="afterInteractive"
         />
       </body>
     </html>
