@@ -4,9 +4,8 @@ import Navbar from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useCart } from '@/context/cart-context';
-import { ShoppingCart, Trash2, CreditCard, Loader2, Package, ShieldCheck, Info } from 'lucide-react';
+import { ShoppingCart, Trash2, CreditCard, Loader2, Package, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useState } from 'react';
 import { useUser, useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +14,7 @@ import { collection } from 'firebase/firestore';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { useRouter } from 'next/navigation';
 import { OrderStatus } from '@/types';
+import Image from 'next/image';
 
 export default function CartPage() {
   const { items, removeFromCart, clearCart, totalPrice } = useCart();
@@ -32,7 +32,6 @@ export default function CartPage() {
       const ordersRef = collection(firestore, 'orders');
 
       // Loop through all items and create individual orders for each seller
-      // This ensures each seller gets their own management dashboard entry
       items.forEach((item) => {
         const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const orderData = {
@@ -64,16 +63,14 @@ export default function CartPage() {
           pickupLocationAddress: item.locationAddress,
           pickupLocationLatitude: item.locationLatitude,
           pickupLocationLongitude: item.locationLongitude,
-          pickupLocationContactPhone: '08000000000', // Production: Fetched from seller profile
+          pickupLocationContactPhone: '08000000000',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
 
-        // Create the order document without blocking the UI
         addDocumentNonBlocking(ordersRef, orderData);
       });
 
-      // Persist total amount for the callback screen summary
       localStorage.setItem('last_bulk_total', totalPrice.toString());
       localStorage.setItem('last_bulk_count', items.length.toString());
 
@@ -102,7 +99,8 @@ export default function CartPage() {
     
     try {
       const bulkOrderId = `BLK-${Date.now()}`;
-      // Call server action to get secure config
+      
+      // Call server action to get secure config and hash
       const config = await getCheckoutConfig(
         bulkOrderId, 
         totalPrice, 
@@ -178,7 +176,7 @@ export default function CartPage() {
                         <div className="flex gap-2 mt-1">
                           <span className="text-xs font-bold text-primary uppercase tracking-wider">{item.condition}</span>
                           <span className="text-xs text-muted-foreground">•</span>
-                          <span className="text-xs text-muted-foreground">{item.quantity}kg Available</span>
+                          <span className="text-xs text-muted-foreground">{item.quantity}kg Selected</span>
                         </div>
                         <p className="text-xs font-medium text-muted-foreground mt-3 flex items-center gap-1">
                           Seller: <span className="text-foreground font-bold">{item.sellerName}</span>

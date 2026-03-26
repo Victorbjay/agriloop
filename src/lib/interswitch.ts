@@ -1,4 +1,3 @@
-
 /**
  * This utility handles the Interswitch integration.
  * It uses Server Actions to protect sensitive keys while providing 
@@ -35,7 +34,9 @@ export async function getNinFullDetails(nin: string) {
  * Prepares the request object for Interswitch Inline Checkout
  */
 export async function getCheckoutConfig(orderId: string, amount: number, buyerEmail: string, buyerName: string) {
-  return await getCheckoutConfigAction(orderId, amount, buyerEmail, buyerName);
+  // Capture origin from window to ensure hash consistency between client and server
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:9002';
+  return await getCheckoutConfigAction(orderId, amount, buyerEmail, buyerName, origin);
 }
 
 /**
