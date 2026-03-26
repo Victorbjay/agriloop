@@ -1,6 +1,8 @@
 
 'use server';
 
+import { createHash } from 'crypto';
+
 /**
  * @fileOverview Server-side actions for Interswitch integration.
  * This file handles secure API calls to Interswitch and protects environment variables.
@@ -137,19 +139,33 @@ export async function getNinFullDetailsAction(nin: string) {
   }
 }
 
+/**
+ * Generates Interswitch Checkout Configuration including the mandatory SHA-512 Hash
+ */
 export async function getCheckoutConfigAction(orderId: string, amount: number, buyerEmail: string, buyerName: string) {
-  const merchantCode = process.env.INTERSWITCH_MERCHANT_CODE || "MX275936";
-  const payItemId = process.env.INTERSWITCH_PAY_ITEM_ID || "Default_Payable_MX275936";
+  const merchantCode = process.env.INTERSWITCH_MERCHANT_CODE || "MX26070";
+  const payItemId = process.env.INTERSWITCH_PAY_ITEM_ID || "101";
+  const hashKey = process.env.INTERSWITCH_HASH_KEY || "D3D13592833342E7599D95B309D5E7B7A879E66B6C4F4E4F4F4F4F4F4F4F4F4F";
+  
+  // Interswitch Transaction Reference should be unique and ideally under 20 chars for some bank integrations
+  const txnRef = `AGR${Date.now().toString().slice(-10)}`;
+  const koboAmount = Math.round(amount * 100);
+  const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/payment/callback`;
+
+  // HASHING: SHA512(txn_ref + merchant_code + pay_item_id + amount + site_redirect_url + hash_key)
+  const hashString = `${txnRef}${merchantCode}${payItemId}${koboAmount}${redirectUrl}${hashKey}`;
+  const hash = createHash('sha512').update(hashString).digest('hex');
 
   return {
     merchant_code: merchantCode,
     pay_item_id: payItemId,
-    txn_ref: `AGR-${orderId}-${Date.now()}`,
-    amount: Math.round(amount * 100), // Amount in Kobo
+    txn_ref: txnRef,
+    amount: koboAmount,
     currency: "566", // NGN
+    hash: hash,
     cust_email: buyerEmail,
     cust_name: buyerName,
-    site_redirect_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:9002'}/payment/callback`,
+    site_redirect_url: redirectUrl,
     mode: "TEST",
   };
 }
