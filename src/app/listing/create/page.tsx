@@ -1,3 +1,4 @@
+
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -39,6 +40,8 @@ export default function CreateListingPage() {
   const [loading, setLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isOtherType, setIsOtherType] = useState(false);
+  const [customType, setCustomType] = useState('');
   
   const [formData, setFormData] = useState({
     wasteType: '' as any,
@@ -73,15 +76,18 @@ export default function CreateListingPage() {
     }
   };
 
+  const effectiveWasteType = isOtherType ? customType : formData.wasteType;
+  const effectiveTypeLabel = isOtherType ? customType : (WASTE_TYPES.find(t => t.value === formData.wasteType)?.label || '');
+
   const handleAiDescription = async () => {
-    if (!formData.wasteType || !formData.quantityKg) {
-      toast({ title: "Details required", description: "Please select waste type and quantity first." });
+    if (!effectiveWasteType || !formData.quantityKg) {
+      toast({ title: "Details required", description: "Please provide waste type and quantity first." });
       return;
     }
     setLoading(true);
     try {
       const result = await generateListingDescription({
-        wasteType: formData.wasteType,
+        wasteType: effectiveWasteType,
         condition: formData.condition,
         quantityKg: Number(formData.quantityKg)
       });
@@ -95,15 +101,14 @@ export default function CreateListingPage() {
   };
 
   const handleAiPricing = async () => {
-    if (!formData.wasteType || !formData.locationAddress) {
+    if (!effectiveWasteType || !formData.locationAddress) {
       toast({ title: "Details required", description: "Waste type and location are needed for market analysis." });
       return;
     }
     setLoading(true);
     try {
-      const typeLabel = WASTE_TYPES.find(t => t.value === formData.wasteType)?.label || '';
       const result = await aiWasteValorizationSuggestion({
-        wasteTypeLabel: typeLabel,
+        wasteTypeLabel: effectiveTypeLabel,
         condition: formData.condition,
         quantityKg: Number(formData.quantityKg),
         qualityGrade: formData.qualityGrade,
@@ -125,7 +130,7 @@ export default function CreateListingPage() {
       return;
     }
 
-    if (!formData.wasteType || !formData.pricePerKg || !formData.locationAddress) {
+    if (!effectiveWasteType || !formData.pricePerKg || !formData.locationAddress) {
       toast({ variant: "destructive", title: "Missing Fields", description: "Please fill in all required fields." });
       return;
     }
@@ -134,13 +139,11 @@ export default function CreateListingPage() {
     const listingsRef = collection(firestore, 'listings');
     const newListingId = doc(listingsRef).id;
     
-    const typeLabel = WASTE_TYPES.find(t => t.value === formData.wasteType)?.label || '';
-    
     let images: string[] = [];
     if (previewImage) {
       images = [previewImage];
     } else {
-      const placeholder = PlaceHolderImages.find(img => img.id === formData.wasteType);
+      const placeholder = PlaceHolderImages.find(img => img.id === effectiveWasteType);
       images = placeholder ? [placeholder.imageUrl] : [`https://picsum.photos/seed/${newListingId}/800/600`];
     }
 
@@ -149,8 +152,8 @@ export default function CreateListingPage() {
       sellerId: user.uid,
       sellerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Seller',
       sellerBadge: profile?.badge || 'none',
-      wasteType: formData.wasteType,
-      wasteTypeLabel: typeLabel,
+      wasteType: effectiveWasteType,
+      wasteTypeLabel: effectiveTypeLabel,
       condition: formData.condition,
       quantityKg: Number(formData.quantityKg),
       pricePerKg: Number(formData.pricePerKg),
@@ -173,6 +176,16 @@ export default function CreateListingPage() {
     
     toast({ title: "Success!", description: "Your listing has been published to the marketplace." });
     router.push('/dashboard');
+  };
+
+  const handleTypeChange = (value: string) => {
+    if (value === 'other') {
+      setIsOtherType(true);
+      setFormData(p => ({ ...p, wasteType: 'other' }));
+    } else {
+      setIsOtherType(false);
+      setFormData(p => ({ ...p, wasteType: value }));
+    }
   };
 
   if (isUserLoading || profileLoading) {
@@ -203,7 +216,6 @@ export default function CreateListingPage() {
     );
   }
 
-  // Role Protection: Only Sellers can list products
   if (profile && profile.role !== 'seller') {
     return (
       <div className="min-h-screen bg-background flex flex-col">
@@ -296,7 +308,7 @@ export default function CreateListingPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Waste Type</Label>
-                    <Select onValueChange={(v) => setFormData(p => ({ ...p, wasteType: v }))}>
+                    <Select onValueChange={handleTypeChange}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
@@ -306,6 +318,16 @@ export default function CreateListingPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {isOtherType && (
+                      <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <Label className="text-xs text-muted-foreground mb-1 block">Specify Waste Type</Label>
+                        <Input 
+                          placeholder="e.g. Groundnut Shells"
+                          value={customType}
+                          onChange={(e) => setCustomType(e.target.value)}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label>Condition</Label>

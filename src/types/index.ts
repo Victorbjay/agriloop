@@ -25,15 +25,7 @@ export interface UserProfile {
   updatedAt: string;
 }
 
-export type WasteType = 
-  | 'cassava_peels' 
-  | 'rice_husk' 
-  | 'maize_stalks' 
-  | 'palm_kernel_shells' 
-  | 'cocoa_pods' 
-  | 'poultry_manure' 
-  | 'cow_dung' 
-  | 'sawdust';
+export type WasteType = string;
 
 export interface Listing {
   id: string;

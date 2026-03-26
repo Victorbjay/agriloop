@@ -1,3 +1,4 @@
+
 import { WasteType } from '@/types';
 
 export const WASTE_TYPES: { value: WasteType; label: string }[] = [
@@ -9,6 +10,7 @@ export const WASTE_TYPES: { value: WasteType; label: string }[] = [
   { value: 'poultry_manure', label: 'Poultry Manure' },
   { value: 'cow_dung', label: 'Cow Dung' },
   { value: 'sawdust', label: 'Sawdust' },
+  { value: 'other', label: 'Other (Specify...)' },
 ];
 
 export const WASTE_CONDITIONS = [

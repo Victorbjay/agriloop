@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file implements a Genkit flow to automatically generate a comprehensive and appealing listing description
@@ -13,17 +14,8 @@ import {z} from 'genkit';
 
 const GenerateListingDescriptionInputSchema = z.object({
   wasteType: z
-    .enum([
-      'cassava_peels',
-      'rice_husk',
-      'maize_stalks',
-      'palm_kernel_shells',
-      'cocoa_pods',
-      'poultry_manure',
-      'cow_dung',
-      'sawdust'
-    ])
-    .describe('The type of agricultural waste.'),
+    .string()
+    .describe('The type of agricultural waste (e.g., cassava peels, rice husk, or any custom biological waste).'),
   condition: z
     .enum(['fresh', 'dried', 'mixed'])
     .describe('The condition of the agricultural waste.'),
