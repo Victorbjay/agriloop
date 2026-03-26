@@ -1,4 +1,3 @@
-
 "use client";
 
 import Navbar from '@/components/layout/Navbar';
@@ -143,7 +142,7 @@ export default function CartPage() {
         <div className="grid gap-8 lg:grid-cols-[1fr_350px]">
           <div className="space-y-4">
             {items.map((item) => (
-              <Card key={item.id} className="border-none shadow-sm overflow-hidden">
+              <Card className="border-none shadow-sm overflow-hidden" key={item.id}>
                 <CardContent className="p-0 flex flex-col sm:flex-row">
                   <div className="relative h-40 w-full sm:w-48 bg-muted">
                     <Image 
@@ -191,10 +190,6 @@ export default function CartPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal ({items.length} items)</span>
                     <span className="font-bold">₦{totalPrice.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Escrow Service Fee</span>
-                    <span className="font-bold text-primary">FREE</span>
                   </div>
                   <div className="pt-4 border-t flex justify-between items-center">
                     <span className="text-lg font-black">Total</span>
