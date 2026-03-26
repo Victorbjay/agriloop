@@ -5,6 +5,7 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
 import Script from 'next/script';
 import Footer from '@/components/layout/Footer';
+import { CartProvider } from '@/context/cart-context';
 
 export const metadata: Metadata = {
   title: 'AgriLoop | Agricultural Waste Marketplace',
@@ -25,13 +26,15 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased flex flex-col min-h-screen">
         <FirebaseClientProvider>
-          <div className="flex-grow flex flex-col">
-            {children}
-          </div>
-          <Footer />
-          <Toaster />
+          <CartProvider>
+            <div className="flex-grow flex flex-col">
+              {children}
+            </div>
+            <Footer />
+            <Toaster />
+          </CartProvider>
         </FirebaseClientProvider>
-        {/* Interswitch Inline Checkout SDK - Changed strategy to afterInteractive for better reliability */}
+        {/* Interswitch Inline Checkout SDK */}
         <Script 
           src="https://newwebpay.qa.interswitchng.com/inline-checkout.js" 
           strategy="afterInteractive"

@@ -1,17 +1,22 @@
+
+"use client";
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Scale, ShieldCheck, Zap } from 'lucide-react';
+import { MapPin, Scale, ShieldCheck, Zap, PlusCircle } from 'lucide-react';
 import { Listing } from '@/types';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/context/cart-context';
+import { Button } from '@/components/ui/button';
 
 interface ListingCardProps {
   listing: Listing;
 }
 
 export default function ListingCard({ listing }: ListingCardProps) {
-  // Only show high-tier verification badges (Silver/Gold) on the marketplace cards
+  const { addToCart } = useCart();
   const showBadge = listing.sellerBadge === 'silver' || listing.sellerBadge === 'gold';
 
   const badgeColor = {
@@ -29,7 +34,6 @@ export default function ListingCard({ listing }: ListingCardProps) {
           alt={listing.wasteTypeLabel}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-110"
-          data-ai-hint="agricultural waste"
         />
         <div className="absolute left-2 top-2 flex flex-col gap-1">
           <Badge className="bg-primary/90 backdrop-blur-sm">{listing.wasteTypeLabel}</Badge>
@@ -69,15 +73,17 @@ export default function ListingCard({ listing }: ListingCardProps) {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="bg-muted/30 p-4 pt-0">
-        <Link 
-          href={`/marketplace/${listing.id}`} 
-          className="w-full"
+      <CardFooter className="bg-muted/30 p-4 flex gap-2">
+        <Button size="sm" variant="outline" className="flex-1 font-bold" asChild>
+          <Link href={`/marketplace/${listing.id}`}>Details</Link>
+        </Button>
+        <Button 
+          size="sm" 
+          className="flex-1 font-bold flex gap-1"
+          onClick={() => addToCart(listing)}
         >
-          <button className="w-full rounded-md bg-primary py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90">
-            View Details
-          </button>
-        </Link>
+          <PlusCircle className="h-4 w-4" /> Cart
+        </Button>
       </CardFooter>
     </Card>
   );

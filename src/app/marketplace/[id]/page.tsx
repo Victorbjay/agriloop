@@ -11,38 +11,29 @@ import {
   ShieldCheck, 
   Calendar, 
   ArrowLeft,
-  Phone,
-  MessageSquare,
   Package,
   Info,
   Loader2,
-  CreditCard
+  CreditCard,
+  PlusCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useDoc, useFirebase, useUser } from '@/firebase';
-import { doc, collection } from 'firebase/firestore';
-import { Listing, UserProfile, OrderStatus } from '@/types';
+import { doc } from 'firebase/firestore';
+import { Listing, UserProfile } from '@/types';
 import { useMemoFirebase } from '@/firebase/provider';
-import { getCheckoutConfig } from '@/lib/interswitch';
-import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-
-declare global {
-  interface Window {
-    webpayCheckout: (config: any) => void;
-  }
-}
+import { useCart } from '@/context/cart-context';
 
 export default function ListingDetailPage() {
   const { id } = useParams();
   const { firestore } = useFirebase();
   const { user } = useUser();
+  const { addToCart } = useCart();
   const router = useRouter();
   const { toast } = useToast();
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const listingRef = useMemoFirebase(() => {
     if (!firestore || !id) return null;
@@ -57,97 +48,6 @@ export default function ListingDetailPage() {
   }, [firestore, listing?.sellerId]);
 
   const { data: sellerProfile } = useDoc<UserProfile>(sellerRef);
-
-  const handlePayment = (response: any, orderId: string, orderData: any) => {
-    // response.resp "00" indicates success in Interswitch
-    if (response && response.resp === "00") {
-      toast({ title: "Payment Successful", description: "Verifying transaction..." });
-      
-      const ordersRef = collection(firestore, 'orders');
-      addDocumentNonBlocking(ordersRef, {
-        ...orderData,
-        id: orderId,
-        status: 'payment_held' as OrderStatus,
-        interswitchRef: response.payRef || 'TBD',
-        transactionRef: response.txnRef || 'TBD',
-        paymentPaidAt: new Date().toISOString(),
-        paymentVerifiedAt: new Date().toISOString(),
-      });
-
-      router.push('/payment/callback');
-    } else {
-      toast({ variant: "destructive", title: "Payment Failed", description: "Transaction was not completed." });
-      setCheckoutLoading(false);
-    }
-  };
-
-  const handleCheckout = async () => {
-    if (!user) {
-      toast({ title: "Login Required", description: "Please log in to purchase listings." });
-      router.push('/login');
-      return;
-    }
-
-    if (!listing) return;
-
-    setCheckoutLoading(true);
-    
-    try {
-      const orderId = `ORD-${Date.now()}`;
-      const orderData = {
-        listingId: listing.id,
-        listingSnapshotId: listing.id,
-        listingSnapshotWasteType: listing.wasteType,
-        listingSnapshotWasteTypeLabel: listing.wasteTypeLabel,
-        listingSnapshotCondition: listing.condition,
-        listingSnapshotPricePerKg: listing.pricePerKg,
-        listingSnapshotMoqKg: listing.moqKg,
-        listingSnapshotQualityGrade: listing.qualityGrade,
-        listingSnapshotAvailableFrom: listing.availableFrom,
-        buyerId: user.uid,
-        buyerName: user.displayName || user.email?.split('@')[0] || 'Anonymous Buyer',
-        sellerId: listing.sellerId,
-        sellerName: listing.sellerName,
-        quantityKg: listing.quantityKg,
-        pricePerKg: listing.pricePerKg,
-        totalAmount: listing.totalPrice,
-        deliveryMethod: 'self_pickup',
-        status: 'pending_payment' as OrderStatus,
-        pickupLocationAddress: listing.locationAddress,
-        pickupLocationLatitude: 6.5244,
-        pickupLocationLongitude: 3.3792,
-        pickupLocationContactPhone: sellerProfile?.phone || '08012345678',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      // CRITICAL: Await the server-side config retrieval
-      const config = await getCheckoutConfig(
-        orderId, 
-        listing.totalPrice, 
-        user.email || 'customer@example.com',
-        user.displayName || 'Customer'
-      );
-
-      // Trigger Interswitch Inline Checkout
-      if (window.webpayCheckout) {
-        window.webpayCheckout({
-          ...config,
-          onComplete: (response: any) => handlePayment(response, orderId, orderData)
-        });
-      } else {
-        throw new Error("Payment gateway is still loading. Please refresh and try again.");
-      }
-    } catch (error: any) {
-      console.error("Checkout Error:", error);
-      toast({ 
-        variant: "destructive", 
-        title: "Checkout Error", 
-        description: error.message || "Failed to initialize payment gateway." 
-      });
-      setCheckoutLoading(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -247,11 +147,20 @@ export default function ListingDetailPage() {
             <div className="flex gap-4">
               <Button 
                 size="lg" 
-                className="flex-1 font-bold h-14 bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg"
-                onClick={handleCheckout}
-                disabled={checkoutLoading}
+                variant="outline"
+                className="flex-1 font-bold h-14 border-2"
+                onClick={() => addToCart(listing)}
               >
-                {checkoutLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <><CreditCard className="mr-2 h-5 w-5" /> Pay Now</>}
+                <PlusCircle className="mr-2 h-5 w-5" /> Add to Cart
+              </Button>
+              <Button 
+                size="lg" 
+                className="flex-1 font-bold h-14 bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg"
+                asChild
+              >
+                <Link href="/cart">
+                  <CreditCard className="mr-2 h-5 w-5" /> Buy Now
+                </Link>
               </Button>
             </div>
 

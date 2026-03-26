@@ -9,12 +9,14 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useUser, useFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
+import { useCart } from '@/context/cart-context';
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const { auth } = useFirebase();
+  const { totalItems } = useCart();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navLinks = [
@@ -56,6 +58,15 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex md:items-center md:space-x-4">
+            <Link href="/cart" className="relative p-2 text-muted-foreground hover:text-primary transition-colors">
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
+
             {!isUserLoading && user ? (
               <>
                 <Button variant="ghost" asChild>
@@ -86,7 +97,15 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="md:hidden">
+          <div className="md:hidden flex items-center gap-4">
+            <Link href="/cart" className="relative p-2 text-muted-foreground">
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-bold text-white">
+                  {totalItems}
+                </span>
+              )}
+            </Link>
             <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               <Menu className="h-6 w-6" />
             </Button>
