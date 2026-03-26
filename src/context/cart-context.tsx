@@ -5,13 +5,13 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Listing } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
-interface CartItem extends Listing {
-  quantity: number; // For now, we usually buy the whole lot, but this allows flexibility
+export interface CartItem extends Listing {
+  quantity: number; 
 }
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (listing: Listing) => void;
+  addToCart: (listing: Listing, quantity: number) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
   totalItems: number;
@@ -41,15 +41,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('agriloop_cart', JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (listing: Listing) => {
+  const addToCart = (listing: Listing, quantity: number) => {
     setItems((prev) => {
-      const existing = prev.find((i) => i.id === listing.id);
-      if (existing) {
-        toast({ title: "Already in Cart", description: `${listing.wasteTypeLabel} is already in your selection.` });
-        return prev;
+      const existingIndex = prev.findIndex((i) => i.id === listing.id);
+      
+      if (existingIndex > -1) {
+        // If it exists, update the quantity
+        const newItems = [...prev];
+        newItems[existingIndex] = { ...newItems[existingIndex], quantity };
+        toast({ title: "Cart Updated", description: `Quantity for ${listing.wasteTypeLabel} updated to ${quantity}kg.` });
+        return newItems;
       }
-      toast({ title: "Added to Cart", description: `${listing.wasteTypeLabel} added to your procurement list.` });
-      return [...prev, { ...listing, quantity: listing.quantityKg }];
+      
+      toast({ title: "Added to Cart", description: `${quantity}kg of ${listing.wasteTypeLabel} added to your selection.` });
+      return [...prev, { ...listing, quantity }];
     });
   };
 
