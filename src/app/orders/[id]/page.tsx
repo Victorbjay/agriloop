@@ -15,7 +15,8 @@ import {
   Clock, 
   AlertCircle,
   Loader2,
-  ChevronRight
+  ShieldCheck,
+  Headphones
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -46,7 +47,6 @@ export default function OrderDetailPage() {
     updateDocumentNonBlocking(orderRef, {
       status: newStatus,
       updatedAt: new Date().toISOString(),
-      [`timeline${newStatus.charAt(0).toUpperCase() + newStatus.slice(1).replace('_', '')}At`]: new Date().toISOString()
     });
 
     toast({
@@ -76,7 +76,7 @@ export default function OrderDetailPage() {
   const isBuyer = user.uid === order.buyerId;
 
   const timelineSteps = [
-    { status: 'pending_payment', label: 'Ordered', icon: Clock },
+    { status: 'payment_held', label: 'Paid & Secured', icon: ShieldCheck },
     { status: 'seller_confirmed', label: 'Confirmed', icon: CheckCircle2 },
     { status: 'ready_for_pickup', label: 'Ready', icon: Package },
     { status: 'completed', label: 'Completed', icon: CheckCircle2 },
@@ -88,13 +88,13 @@ export default function OrderDetailPage() {
       <main className="container mx-auto max-w-4xl px-4 py-8">
         <Link 
           href="/dashboard" 
-          className="mb-6 flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-colors"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
         </Link>
 
-        <div className="grid gap-8 md:grid-cols-[1fr_300px]">
+        <div className="grid gap-8 md:grid-cols-[1fr_320px]">
           <div className="space-y-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -103,7 +103,8 @@ export default function OrderDetailPage() {
               </div>
               <Badge className={cn(
                 "w-fit px-4 py-1 text-sm font-bold capitalize",
-                order.status === 'completed' ? "bg-green-100 text-green-700" : "bg-primary/10 text-primary"
+                order.status === 'completed' ? "bg-green-100 text-green-700" : 
+                order.status === 'payment_held' ? "bg-blue-100 text-blue-700" : "bg-primary/10 text-primary"
               )}>
                 {order.status.replace('_', ' ')}
               </Badge>
@@ -115,7 +116,8 @@ export default function OrderDetailPage() {
                  <div className="relative flex justify-between">
                     <div className="absolute top-5 left-0 right-0 h-0.5 bg-muted" />
                     {timelineSteps.map((step, idx) => {
-                      const isActive = order.status === step.status || idx < timelineSteps.findIndex(s => s.status === order.status);
+                      const currentIdx = timelineSteps.findIndex(s => s.status === order.status);
+                      const isActive = idx <= (currentIdx === -1 ? 0 : currentIdx);
                       const isCurrent = order.status === step.status;
                       
                       return (
@@ -127,7 +129,7 @@ export default function OrderDetailPage() {
                            )}>
                              <step.icon className="h-5 w-5" />
                            </div>
-                           <span className={cn("text-xs font-bold", isActive ? "text-primary" : "text-muted-foreground")}>
+                           <span className={cn("text-[10px] font-black uppercase tracking-tighter", isActive ? "text-primary" : "text-muted-foreground")}>
                              {step.label}
                            </span>
                         </div>
@@ -143,13 +145,13 @@ export default function OrderDetailPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-4 p-4 rounded-xl bg-muted/30">
-                  <div className="h-20 w-20 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary">
+                  <div className="h-20 w-20 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-primary text-2xl">
                     {order.listingSnapshotWasteTypeLabel[0]}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold">{order.listingSnapshotWasteTypeLabel}</h3>
+                    <h3 className="font-bold text-lg">{order.listingSnapshotWasteTypeLabel}</h3>
                     <p className="text-sm text-muted-foreground">{order.quantityKg} kg @ ₦{order.pricePerKg}/kg</p>
-                    <p className="text-lg font-black mt-1">₦{order.totalAmount.toLocaleString()}</p>
+                    <p className="text-xl font-black mt-1 text-primary">₦{order.totalAmount.toLocaleString()}</p>
                   </div>
                 </div>
               </CardContent>
@@ -158,31 +160,31 @@ export default function OrderDetailPage() {
             <div className="grid gap-6 sm:grid-cols-2">
               <Card className="border-none shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Pickup Location</CardTitle>
+                  <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">Pickup Location</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex gap-2">
                     <MapPin className="h-4 w-4 text-primary shrink-0" />
-                    <p className="text-sm">{order.pickupLocationAddress}</p>
+                    <p className="text-sm font-medium">{order.pickupLocationAddress}</p>
                   </div>
                   <div className="flex gap-2">
                     <Phone className="h-4 w-4 text-primary shrink-0" />
-                    <p className="text-sm">{order.pickupLocationContactPhone}</p>
+                    <p className="text-sm font-medium">{order.pickupLocationContactPhone}</p>
                   </div>
                 </CardContent>
               </Card>
               <Card className="border-none shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Partner Details</CardTitle>
+                  <CardTitle className="text-xs font-black uppercase tracking-[0.1em] text-muted-foreground">Partner Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent">
+                    <div className="h-10 w-10 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent">
                       {isSeller ? order.buyerName[0] : order.sellerName[0]}
                     </div>
                     <div>
                       <p className="text-sm font-bold">{isSeller ? 'Buyer' : 'Seller'}: {isSeller ? order.buyerName : order.sellerName}</p>
-                      <p className="text-xs text-muted-foreground">Verified Member</p>
+                      <Badge variant="outline" className="text-[10px] uppercase font-black px-2 py-0">Verified Member</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -191,14 +193,17 @@ export default function OrderDetailPage() {
           </div>
 
           <aside className="space-y-6">
-            <Card className="border-none shadow-lg bg-primary text-primary-foreground">
-               <CardHeader>
-                 <CardTitle className="text-lg">Order Actions</CardTitle>
-               </CardHeader>
-               <CardContent className="space-y-3">
-                 {isSeller && order.status === 'pending_payment' && (
+            <Card className="border-none shadow-xl bg-primary text-primary-foreground overflow-hidden">
+               <div className="bg-primary-container/20 p-4 border-b border-white/10">
+                 <CardTitle className="text-lg flex items-center gap-2">
+                   <Clock className="h-5 w-5" />
+                   Order Actions
+                 </CardTitle>
+               </div>
+               <CardContent className="p-6 space-y-4">
+                 {isSeller && order.status === 'payment_held' && (
                    <Button 
-                    className="w-full bg-white text-primary hover:bg-white/90 font-bold"
+                    className="w-full bg-white text-primary hover:bg-white/90 font-black h-12 text-md"
                     onClick={() => handleUpdateStatus('seller_confirmed')}
                    >
                      Confirm Order
@@ -206,7 +211,7 @@ export default function OrderDetailPage() {
                  )}
                  {isSeller && order.status === 'seller_confirmed' && (
                    <Button 
-                    className="w-full bg-white text-primary hover:bg-white/90 font-bold"
+                    className="w-full bg-white text-primary hover:bg-white/90 font-black h-12 text-md"
                     onClick={() => handleUpdateStatus('ready_for_pickup')}
                    >
                      Mark as Ready
@@ -214,30 +219,41 @@ export default function OrderDetailPage() {
                  )}
                  {isBuyer && order.status === 'ready_for_pickup' && (
                    <Button 
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold"
+                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-black h-12 text-md shadow-lg"
                     onClick={() => handleUpdateStatus('completed')}
                    >
                      Confirm Receipt
                    </Button>
                  )}
                  
-                 <Button variant="outline" className="w-full border-white text-white hover:bg-white/10">
+                 <Button 
+                  variant="outline" 
+                  className="w-full border-white/40 text-white hover:bg-white/10 font-bold h-12 flex gap-2"
+                 >
+                   <Headphones className="h-4 w-4" />
                    Contact Support
                  </Button>
 
                  {order.status !== 'completed' && order.status !== 'cancelled' && (
-                   <Button variant="ghost" className="w-full text-white/70 hover:text-white" onClick={() => handleUpdateStatus('cancelled')}>
+                   <Button 
+                    variant="ghost" 
+                    className="w-full text-white/60 hover:text-white text-xs" 
+                    onClick={() => handleUpdateStatus('cancelled')}
+                   >
                      Cancel Order
                    </Button>
                  )}
                </CardContent>
             </Card>
 
-            <div className="rounded-2xl border-2 border-dashed p-6 text-center space-y-3">
-               <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto" />
-               <p className="text-xs text-muted-foreground italic">
-                 Escrow protection is active. Funds will be released to the seller once the buyer confirms receipt.
-               </p>
+            <div className="rounded-2xl border-2 border-dashed border-primary/20 bg-primary/5 p-6 text-center space-y-4">
+               <ShieldCheck className="h-10 w-10 text-primary mx-auto" />
+               <div className="space-y-1">
+                 <p className="text-sm font-black text-primary uppercase tracking-wider">Safe Loop Escrow</p>
+                 <p className="text-xs text-muted-foreground leading-relaxed italic">
+                   Funds are currently secured by AgriLoop. The Seller will only be paid once the Buyer confirms pickup and quality.
+                 </p>
+               </div>
             </div>
           </aside>
         </div>
