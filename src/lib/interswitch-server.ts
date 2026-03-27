@@ -146,12 +146,14 @@ export async function getCheckoutConfigAction(orderId: string, amount: number, b
   const payItemId = process.env.INTERSWITCH_PAY_ITEM_ID || "101";
   const hashKey = process.env.INTERSWITCH_HASH_KEY || "D3D13592833342E7599D95B309D5E7B7A879E66B6C4F4E4F4F4F4F4F4F4F4F4F";
   
-  // Interswitch Transaction Reference must be unique
-  const txnRef = `AGR${Date.now().toString().slice(-10)}`;
-  const koboAmount = Math.round(amount * 100);
+  // Interswitch Transaction Reference must be unique and alphanumeric
+  const txnRef = `AGR${Date.now().toString()}${Math.floor(Math.random() * 1000)}`;
+  const koboAmount = Math.floor(amount * 100);
   
-  // Dynamic redirect URL based on client origin to ensure hash consistency
-  const redirectUrl = `${origin}/payment/callback`;
+  // Dynamic redirect URL based on client origin to ensure hash consistency.
+  // We ensure there is NO trailing slash on origin before appending path.
+  const cleanOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+  const redirectUrl = `${cleanOrigin}/payment/callback`;
 
   // HASHING FORMULA: txn_ref + merchant_code + pay_item_id + amount + site_redirect_url + hash_key
   const hashString = `${txnRef}${merchantCode}${payItemId}${koboAmount}${redirectUrl}${hashKey}`;

@@ -25,8 +25,9 @@ export default function CartPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const handleBulkPayment = async (response: any) => {
-    // Interswitch success response code is "00"
-    if (response && (response.resp === "00" || response.resp === "000")) {
+    // Interswitch success response codes
+    const successCodes = ["00", "000", "0"];
+    if (response && (successCodes.includes(response.resp) || response.status === "SUCCESSFUL")) {
       toast({ title: "Payment Successful", description: "Finalizing your bulk procurement..." });
       
       const ordersRef = collection(firestore, 'orders');
@@ -76,11 +77,14 @@ export default function CartPage() {
 
       clearCart();
       router.push('/payment/callback');
+    } else if (response && response.resp === "CANCELED") {
+      toast({ title: "Payment Canceled", description: "You closed the payment gateway." });
+      setCheckoutLoading(false);
     } else {
       toast({ 
         variant: "destructive", 
         title: "Transaction Incomplete", 
-        description: "The payment was not processed. Please try again or use a different card." 
+        description: response?.desc || "The payment was not processed. Please try again or use a different card." 
       });
       setCheckoutLoading(false);
     }
@@ -111,10 +115,11 @@ export default function CartPage() {
       if (window.webpayCheckout) {
         window.webpayCheckout({
           ...config,
-          onComplete: handleBulkPayment
+          onComplete: handleBulkPayment,
+          onClose: () => setCheckoutLoading(false)
         });
       } else {
-        throw new Error("Payment gateway is initializing. Please wait a few seconds.");
+        throw new Error("Payment gateway is initializing. Please wait a few seconds and try again.");
       }
     } catch (error: any) {
       toast({ variant: "destructive", title: "Checkout Error", description: error.message });
