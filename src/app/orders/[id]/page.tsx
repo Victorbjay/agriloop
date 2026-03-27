@@ -110,7 +110,6 @@ export default function OrderDetailPage() {
               </Badge>
             </div>
 
-            {/* Timeline Simulation */}
             <Card className="border-none shadow-sm overflow-hidden">
                <CardContent className="p-6">
                  <div className="relative flex justify-between">

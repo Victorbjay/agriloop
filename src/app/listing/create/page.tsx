@@ -416,7 +416,7 @@ export default function CreateListingPage() {
                       size="sm" 
                       onClick={handleAiPricing}
                       disabled={loading}
-                      className="text-accent hover:text-accent/80"
+                      className="text-accent hover:text-white"
                     >
                       {loading ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <TrendingUp className="mr-1 h-3 w-3" />}
                       Market Suggestions
