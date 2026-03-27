@@ -227,7 +227,7 @@ export default function OrderDetailPage() {
                  
                  <Button 
                   variant="outline" 
-                  className="w-full border-white/40 text-white hover:bg-white/10 font-bold h-12 flex gap-2"
+                  className="w-full border-white/40 text-primary hover:bg-white/10 font-bold h-12 flex gap-2"
                  >
                    <Headphones className="h-4 w-4" />
                    Contact Support
