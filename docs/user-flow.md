@@ -3,8 +3,8 @@
 This document outlines the precision-organic transaction lifecycle on the AgriLoop platform.
 
 ## 1. Identity & Onboarding
-*   **Verification**: All sellers must undergo NIN verification via Interswitch.
-*   **Data Enrichment**: Phone numbers and legal names are retrieved from identity records during signup to ensure a trusted marketplace.
+*   **Verification**: All sellers undergo NIN verification via Interswitch.
+*   **Data Enrichment**: Phone numbers and legal names are to be retrieved from identity records during signup to ensure a trusted marketplace.
 
 ## 2. Listing & Discovery
 *   **AI Valorization**: Sellers use Genkit AI to generate optimized descriptions and pricing based on Nigerian market trends.

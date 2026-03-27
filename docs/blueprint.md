@@ -15,7 +15,7 @@
 - Primary color: A robust green, HSL(145, 75%, 36%) or #16a34a, symbolizing agriculture, growth, and sustainability, used for key branding elements and interactive components.
 - Background color: A subtle, desaturated green, HSL(145, 15%, 95%) or #ecf8ef, providing a fresh and clean canvas that maintains visual harmony with the primary theme.
 - Accent color: A vibrant amber, HSL(39, 93%, 50%) or #f59e0b, signifying energy, innovation, and value from waste, prominently used for calls-to-action, highlights, and urgent notifications.
-- Body and headline font: 'Inter' (sans-serif), chosen for its excellent readability, modern aesthetic, and versatility across various content types on a B2B platform. Note: currently only Google Fonts are supported.
+- Body and headline font: 'Inter' (Nunito), chosen for its excellent readability, modern aesthetic, and versatility across various content types on a B2B platform. Note: currently only Google Fonts are supported.
 - Leverage icons from Lucide React, opting for a clean, outline-based, and contemporary style to ensure clarity and aesthetic consistency throughout the application.
 - Implement a responsive, mobile-first layout. Key interface patterns include a clean split-screen design for authentication flows, a sticky filter sidebar for an efficient marketplace browsing experience, and a tabbed interface for dashboards to manage complex information logically.
 - Incorporate subtle and meaningful animations, such as smooth page transitions, clear loading indicators for asynchronous operations (e.g., verification, payment processing), and dynamic visual cues for real-time status updates (e.g., order timelines), enhancing user engagement and feedback.

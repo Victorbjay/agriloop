@@ -1,54 +1,69 @@
-# AgriLoop | Precision Agricultural Waste Marketplace
+# AgriLoop
 
-AgriLoop is a B2B precision-organic marketplace designed to transform West Africa's agricultural biomass into high-value resources. By connecting farmers and agro-processors with industrial buyers (bio-energy, organic fertilizer, and construction), we close the loop on agricultural waste while creating a verified, transparent economy.
+**AgriLoop** is a B2B digital marketplace that transforms agricultural waste in West Africa into valuable resources by connecting farmers and agro-processors with industries like bioenergy, fertilizer, and construction.
 
-## 🚀 The Mission
-To eliminate agricultural waste in the sub-region by 2030 through "Valorization as a Service," leveraging AI for market pricing and Interswitch for secure escrowed transactions.
+---
 
-## 🛠️ Technical Stack
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
-- **Styling**: Tailwind CSS, ShadCN UI
-- **Backend/Database**: Firebase Firestore, Firebase Authentication
-- **AI Engine**: Genkit with Google Gemini 2.5 Flash
-- **Payment & Identity**: Interswitch Webpay (Inline Checkout) & Interswitch Identity (NIN Verification)
-- **Maps**: Leaflet for Geo-Sourcing and Cluster Mapping
+## Core Goal
+To eliminate agricultural waste by 2030 using **AI-powered pricing** and **secure escrow payments**, creating a transparent and efficient waste-to-value economy.
 
-## 🌟 Key Features
+---
 
-### 1. AI Valorization Engine (Genkit)
-Sellers use our Genkit-powered AI to:
-- **Generate Optimized Descriptions**: Automatically creates professional, technical descriptions of biomass based on type and condition.
-- **Dynamic Pricing Suggestions**: Analyzes Nigerian market trends and logistics proximity to suggest optimal Price-per-KG (NGN).
+## How It Works
+- **AI Engine** helps sellers create optimized listings and suggests fair market prices  
+- **Buyers** can purchase from multiple sellers in one transaction  
+- **Payments** are handled securely via escrow and released only after delivery confirmation  
+- **Seller Verification** is done through NIN to ensure trust and authenticity  
 
-### 2. Multi-Seller Bulk Procurement
-Buyers can aggregate biomass listings from multiple verified sellers into a single cart. AgriLoop handles the complexity of executing one unified payment while generating individual vendor orders.
+---
 
-### 3. Safe Loop Escrow (Interswitch)
-Integrated with Interswitch for secure payment handling:
-- **Payment Held**: Funds are secured in the AgriLoop neutral account upon checkout.
-- **Milestone-Based Release**: Funds are only released to the seller after the buyer confirms physical receipt and quality verification at the pickup point.
+## Key Features
+- **AI Valorization**: Smart descriptions + dynamic pricing  
+- **Bulk Buying**: One cart, multiple sellers  
+- **Escrow Payments**: Safe, milestone-based transactions  
+- **Identity Verification**: NIN-based seller validation  
 
-### 4. Identity-First Marketplace
-All sellers undergo mandatory **NIN Verification** via Interswitch identity services before they can list products, ensuring a high-trust industrial environment.
+---
 
-### 5. Impact Dashboard
-Real-time tracking of:
-- **CO2 Emissions Saved** (Est. based on waste diversion).
-- **Tons Recycled** across regional clusters (Ogun, Lagos, Oyo).
-- **Community Income** generated for verified farmers.
+## Tech Stack (Simplified)
+Built with modern tools like:
+- React & Next.js  
+- Firebase  
+- Tailwind CSS  
+- Google Gemini (AI)  
+- Interswitch (payments & identity)  
 
-## 🧪 Testing & Demo Instructions
+---
 
-### Demo Credentials
-- **NIN Verification**: During signup or in the verification tab, use the demo NIN: **`12345678901`**. This will simulate a successful Interswitch Identity match.
-- **Payment**: The checkout system is integrated with the Interswitch Sandbox. You can use standard Interswitch test cards to simulate successful bulk procurements.
+## Big Idea
+AgriLoop turns agricultural waste into economic opportunity while promoting sustainability, transparency, and trust in the marketplace.
+
+## TEAM ROLE 
+- **JOY UMOFIA** (Product Designer)
+- **VICTOR OKPE** (FrontEnd)
+- **AL-AMEEN AMEEN** (BackEnd)
 
 ### Running the Project
 1. Clone the repository.
-2. Install dependencies: `npm install`.
-3. Set up your `.env` with Firebase and Interswitch sandbox credentials.
-4. Run development server: `npm run dev`.
-5. For AI flows: `npm run genkit:dev`.
+2. Install dependencies: npm install.
+3. Set up your .env with Firebase and Interswitch sandbox credentials.
+4. Run development server: npm run dev.
+5. For AI flows: npm run genkit:dev.
 
 ---
-*Developed for the Firebase & Interswitch Hackathon | Closing the Loop on Agricultural Waste.*
+## 🧪 Testing & Demo Instructions
+
+### Demo Credentials
+- *NIN Verification: During signup or in the verification tab, use the demo NIN: *12345678901**. This will simulate a successful Interswitch Identity match.
+- *Payment*: The checkout system is integrated with the Interswitch Sandbox. You can use standard Interswitch test cards to simulate successful bulk procurements.
+- *User*: 
+    >email: timoke@test.com / hezekiahonoja1@gmail.com 
+    >password: Test1234 / password: Test1234.
+
+
+Look at the [PRD](https://www.notion.so/Agriloop-330f3e8e3d9480b89760f39abb54b305?source=copy_link) to learn more.
+
+**Live URL** [agriloop.com](https://agriloop-theta.vercel.app/) to learn more.
+
+---
+Developed for the Enyata Buildathon 2026 & Interswitch Hackathon | Closing the Loop on Agricultural Waste.
