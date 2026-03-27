@@ -18,13 +18,14 @@ import {
   ShieldAlert,
   BarChart3,
   Search,
-  RefreshCw
+  RefreshCw,
+  Edit2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useUser, useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, where, limit, doc } from 'firebase/firestore';
 import { Listing, Order, UserProfile } from '@/types';
-import { updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { updateDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import Image from 'next/image';
 import { 
   AlertDialog, 
@@ -133,6 +134,12 @@ export default function DashboardPage() {
     } finally {
       setSwitchingRole(false);
     }
+  };
+
+  const handleDeleteListing = (listingId: string) => {
+    const listingDocRef = doc(firestore, 'listings', listingId);
+    deleteDocumentNonBlocking(listingDocRef);
+    toast({ title: "Listing Deleted", description: "The item has been removed from the marketplace." });
   };
 
   if (isUserLoading || profileLoading) {
@@ -269,7 +276,7 @@ export default function DashboardPage() {
                     <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
                   ) : listings && listings.length > 0 ? (
                     listings.map((item) => (
-                      <Card key={item.id} className="flex flex-col overflow-hidden border-none shadow-sm md:flex-row">
+                      <Card key={item.id} className="flex flex-col overflow-hidden border-none shadow-sm md:flex-row bg-white">
                         <div className="relative h-48 w-full md:w-64">
                            <Image 
                             src={item.images?.[0] || `https://picsum.photos/seed/${item.id}/300/200`} 
@@ -289,10 +296,41 @@ export default function DashboardPage() {
                                 <p className="text-xs text-muted-foreground">{item.quantityKg}kg available</p>
                               </div>
                            </div>
-                           <div className="mt-auto flex gap-2 pt-4">
-                              <Button size="sm" variant="outline" className="flex-1 sm:flex-none" asChild>
+                           <div className="mt-auto flex flex-wrap gap-2 pt-4">
+                              <Button size="sm" variant="outline" asChild>
                                 <Link href={`/marketplace/${item.id}`}>View</Link>
                               </Button>
+                              <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/5" asChild>
+                                <Link href={`/listing/edit/${item.id}`}>
+                                  <Edit2 className="h-3 w-3 mr-1" />
+                                  Edit
+                                </Link>
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="sm" variant="outline" className="border-destructive text-destructive hover:bg-destructive/5">
+                                    <Trash2 className="h-3 w-3 mr-1" />
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Listing?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently remove your listing from the marketplace. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleDeleteListing(item.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                            </div>
                         </div>
                       </Card>
